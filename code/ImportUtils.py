@@ -1,5 +1,38 @@
 # ImportUtils
 
+#from main import dicParams, dicFiles
+from shared import *
+import pyodbc
+import pandas as pd
+
+
+
+def firstrun_download_files():
+    # download files in dicFiles from the Internet
+    for key in dicFiles.keys():
+        if not exists(dicParams['dataFolderZIP'] + key):
+            print("Downloading " + key)
+            wget.download(dicFiles[key], dicParams['dataFolderZIP'] + key)
+
+
+def firstrun_extract_MDBs():
+    for key in dicFiles.keys():
+        zipfile = dicParams['dataFolderZIP'] + key
+        
+        with ZipFile(zipfile, 'r') as zObject:
+            path=dicParams['dataFolderMDB'] + key[:-4] + ".mdb"
+ 
+            filename = ZipFile.namelist(zObject)[0]
+
+            # Extracting specific file in the zip
+            # into a specific location.
+            zObject.extract( member=filename, path=dicParams['dataFolderMDB'])
+
+
+            print("Rename {} to {}".format(dicParams['dataFolderMDB'] +filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb"))
+            rename(dicParams['dataFolderMDB'] + filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb")
+            
+			
 
 
 def get_dfGeo_from_Parquet():
