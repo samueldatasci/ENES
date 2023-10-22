@@ -7,6 +7,8 @@ import pandas as pd
 
 
 
+
+
 def firstrun_download_files():
     # download files in dicFiles from the Internet
     for key in dicFiles.keys():
@@ -278,7 +280,7 @@ def get_dfCursos_from_MDB():
 
 			print("Ano {} - cursos: {}".format(ano, dfCursosAno.shape[0]))
 
-			if "dfCursos" not in globals():
+			if "dfCursos" not in locals():
 				dfCursos = dfCursosAno
 			else:
 				dfCursos = dfCursos.append(dfCursosAno)
@@ -319,7 +321,7 @@ def get_dfExames_from_MDB():
 			# print("Ano {} - exames: {}".format(ano, dfExamesAno.shape[0]))
 			# print(dfExamesAno)
 
-			if "dfExames" not in globals():
+			if "dfExames" not in locals():
 				dfExames = dfExamesAno
 			else:
 				dfExames = dfExames.append(dfExamesAno)
@@ -347,7 +349,8 @@ def get_dfResultados_from_MDB():
 
 	# LOAD Resultados for all years
 
-	for ano in range(2022, 2008-1, -1):
+	for ano in range(2022, 2021-1, -1):
+	#for ano in range(2022, 2008-1, -1):
 		try:
 			# Establish a connection to the database
 			mdbfile = dicParams['dataFolderMDB'] +  'ENES'+str(ano)+'.mdb'
@@ -364,7 +367,7 @@ def get_dfResultados_from_MDB():
 
 			#df[ano] = dfResultadosAno
 
-			if "dfResultados" not in globals():
+			if "dfResultados" not in locals():
 				dfResultados = dfResultadosAno
 			else:
 				dfResultados = dfResultados.append(dfResultadosAno)
@@ -408,3 +411,7 @@ def get_dfResultAnalise_from_MDB():
 
 
 
+x = get_dfResultados_from_MDB()
+
+print("Resultados: ", x.shape)
+print("Done...")
