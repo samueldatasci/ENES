@@ -1,45 +1,56 @@
 # ImportUtils
 
-#from main import dicParams, dicFiles
-from shared import *
-import pyodbc
+
 import pandas as pd
+import numpy as np
+import yaml
+import pyodbc
+
+from os import rename
+from os.path import exists
+import time, datetime
+
+# importing the zipfile module
+from zipfile import ZipFile
+  
+# importing the requests module
+import requests
+import wget
+
+#from sqlalchemy import create_engine
+import traceback
 
 
-
-
+# from main import dicParams
+# verbose = dicParams["verbose"]
 
 def firstrun_download_files():
-    # download files in dicFiles from the Internet
-    for key in dicFiles.keys():
-        if not exists(dicParams['dataFolderZIP'] + key):
-            print("Downloading " + key)
-            wget.download(dicFiles[key], dicParams['dataFolderZIP'] + key)
+	# download files in dicFiles from the Internet
+	from main import dicParams, dicFiles
+	for key in dicFiles.keys():
+		if not exists(dicParams['dataFolderZIP'] + key):
+			print("Downloading " + key)
+			wget.download(dicFiles[key], dicParams['dataFolderZIP'] + key)
 
 
 def firstrun_extract_MDBs():
-    for key in dicFiles.keys():
-        zipfile = dicParams['dataFolderZIP'] + key
-        
-        with ZipFile(zipfile, 'r') as zObject:
-            path=dicParams['dataFolderMDB'] + key[:-4] + ".mdb"
- 
-            filename = ZipFile.namelist(zObject)[0]
+	from main import dicParams, dicFiles
+	for key in dicFiles.keys():
+		zipfile = dicParams['dataFolderZIP'] + key
 
-            # Extracting specific file in the zip
-            # into a specific location.
-            zObject.extract( member=filename, path=dicParams['dataFolderMDB'])
-
-
-            print("Rename {} to {}".format(dicParams['dataFolderMDB'] +filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb"))
-            rename(dicParams['dataFolderMDB'] + filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb")
-            
-			
+		with ZipFile(zipfile, 'r') as zObject:
+			path=dicParams['dataFolderMDB'] + key[:-4] + ".mdb"
+			filename = ZipFile.namelist(zObject)[0]
+			# Extracting specific file in the zip into a specific location.
+			zObject.extract( member=filename, path=dicParams['dataFolderMDB'])
+			print("Rename {} to {}".format(dicParams['dataFolderMDB'] +filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb"))
+			rename(dicParams['dataFolderMDB'] + filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb")
 
 
 def get_dfGeo_from_Parquet():
 	'''Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from parquet files.
 	'''
+	from main import dicParams, dicFiles
 	parquetPath = dicParams['dataFolderParquet']
 	dfGeo = pd.read_parquet(parquetPath + 'dfGeo.parquet.gzip')  
 	return dfGeo
@@ -48,6 +59,7 @@ def get_dfSitFreq_from_Parquet():
 	'''
 	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from parquet files.
 	'''
+	from main import dicParams, dicFiles
 	# SitFreq
 	parquetPath = dicParams['dataFolderParquet']
 	dfSitFreq = pd.read_parquet(parquetPath + 'dfSitFreq.parquet.gzip')  
@@ -57,6 +69,7 @@ def get_dfSitFreq_from_Parquet():
 def get_dfSchools_from_Parquet():
 	'''Return dataframe with School information. Obtain data from parquet files.
 	'''
+	from main import dicParams, dicFiles
 	# Schools
 	parquetPath = dicParams['dataFolderParquet']
 	dfSchools = pd.read_parquet(parquetPath + 'dfSchools.parquet.gzip')  
@@ -65,6 +78,7 @@ def get_dfSchools_from_Parquet():
 
 def get_dfCursos_from_Parquet():
 	'''Return dataframe with Course information. Obtain data from parquet files.'''
+	from main import dicParams, dicFiles
 	# Curso, tipo, subtipo
 	parquetPath = dicParams['dataFolderParquet']
 	dfCursos = pd.read_parquet(parquetPath + 'dfCursos.parquet.gzip')  
@@ -73,6 +87,7 @@ def get_dfCursos_from_Parquet():
 
 def get_dfExames_from_Parquet():
 	'''Return dataframe with Exam information. Obtain data from parquet files.'''
+	from main import dicParams, dicFiles
 	# Exames
 	parquetPath = dicParams['dataFolderParquet']
 	dfExames = pd.read_parquet(parquetPath + 'dfExames.parquet.gzip')  
@@ -81,15 +96,21 @@ def get_dfExames_from_Parquet():
 
 def get_dfResultados_from_Parquet():
 	'''Return dataframe with Exam Results information. Obtain data from parquet files.'''
+	from main import dicParams, dicFiles
 	# Resultados dos exames
 	parquetPath = dicParams['dataFolderParquet']
-	dfResultados = pd.read_parquet(parquetPath + 'dfResultados.parquet.gzip')  
+	dfResultados = pd.read_parquet(parquetPath + 'dfResultados.parquet.gzip')
+	
+	# print record count by ano
+	#print(dfResultados.groupby('ano').count())
+
 	return dfResultados
 
 
 
 def get_dfResultAnalise_from_Parquet():
 	'''Return dataframe with relevant subset of Exam Results information. Obtain data from parquet files.'''
+	from main import dicParams, dicFiles
 	# Resultados dos Exames
 	# Apenas Fase 1
 	# Apenas com TemInterno = 1
@@ -97,9 +118,10 @@ def get_dfResultAnalise_from_Parquet():
 	parquetPath = dicParams['dataFolderParquet']
 	dfResultAnalise = pd.read_parquet(parquetPath + 'dfResultAnalise.parquet.gzip')
 
+	# print record count by ano
+	#print(dfResultAnalise.groupby('ano').count())
+
 	return(dfResultAnalise)
-
-
 
 
 
@@ -109,6 +131,7 @@ def get_dfGeo_from_MDB():
 	'''
 	Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from MDB files.
 	'''
+	from main import dicParams, dicFiles
 	# Distrito+Concelho+Nuts3
 
 	# Nuts3 description is in the 2018 database; the other attributes are obtained from the 2021 database
@@ -156,6 +179,7 @@ def get_dfSitFreq_from_MDB():
 	'''
 	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from MDB files.
 	'''
+	from main import dicParams, dicFiles
 	# SitFreq
 
 	# LOAD SitFreq from 2018
@@ -186,6 +210,7 @@ def get_dfSchools_from_MDB():
 	'''
 	Return dataframe with School information. Obtain data from MDB files.
 	'''
+	from main import dicParams, dicFiles
 	# Schools
 
 	# LOAD 2022
@@ -261,6 +286,7 @@ def get_dfCursos_from_MDB():
 	Return dataframe with Course information. Obtain data from MDB files.
 	'''
 
+	from main import dicParams, dicFiles
 	# Curso, tipo, subtipo
 
 	for ano in range(2022, 2008-1, -1):
@@ -301,6 +327,7 @@ def get_dfExames_from_MDB():
 	'''
 	Return dataframe with Exam information. Obtain data from MDB files.
 	'''
+	from main import dicParams, dicFiles
 	# Exames
 
 	for ano in range(2022, 2008-1, -1):
@@ -344,6 +371,7 @@ def get_dfResultados_from_MDB():
 	'''
 	Return dataframe with Exam Results information. Obtain data from MDB files.
 	'''
+	from main import dicParams, dicFiles
 	# Resultados dos Exames
 
 
@@ -373,14 +401,13 @@ def get_dfResultados_from_MDB():
 		except:
 			print("Ano {} - ERRO!".format(ano))
 
-	# Close the connection
-	connection.close()
-		
+		# Close the connection
+		connection.close()
+
 	parquetPath = dicParams['dataFolderParquet']
-	dfResultados.to_parquet(parquetPath + 'dfResultados.parquet.gzip', compression='gzip')  
+	dfResultados.to_parquet(parquetPath + 'dfResultados.parquet.gzip', compression='gzip')
 
 	return( dfResultados)
-
 
 
 
@@ -390,6 +417,7 @@ def get_dfResultAnalise_from_MDB():
 	'''
 	Return dataframe with relevant subset of Exam Results information. Obtain data from MDB files.
 	'''
+	from main import dicParams, dicFiles
 	# Resultados dos Exames
 	# Apenas Fase 1
 	# Apenas com TemInterno = 1
@@ -397,7 +425,7 @@ def get_dfResultAnalise_from_MDB():
 	dfResultAnalise = get_dfResultados_from_MDB()
 
 	dfResultAnalise = dfResultAnalise[dfResultAnalise["Fase"]=='1']
-	dfResultAnalise = dfResultAnalise[dfResultAnalise["TemInterno"]=='S']
+	#dfResultAnalise = dfResultAnalise[dfResultAnalise["TemInterno"]=='S'] -- For 2020 and after, this is always 'N'
 
 	# Reset the index if needed
 	dfResultAnalise.reset_index(drop=True, inplace=True)
@@ -409,8 +437,18 @@ def get_dfResultAnalise_from_MDB():
 	return( dfResultAnalise)
 
 
+def vprint(*args, **kwargs):
+	from main import dicParams
+	if dicParams["verbose"] == True:
+		print(*args, **kwargs)
 
-x = get_dfResultados_from_MDB()
+# print current time and elapsed time since last execution
+def vprint_time(start_time = 0, prefix = ''):
+	current_time = time.time()
+	if start_time == 0:
+		vprint(prefix + 'Current time: ' + str(datetime.datetime.now()))
+	else:
+		elapsed_time = current_time - start_time
+		vprint(prefix + 'Current time: ' + str(datetime.datetime.now()) + '; Elapsed time: ' + str(datetime.timedelta(seconds=elapsed_time)))
+	return current_time
 
-print("Resultados: ", x.shape)
-print("Done...")
