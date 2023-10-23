@@ -1,33 +1,5 @@
 #!pip install wget
 
-# importing the requests module
-import requests
-import wget
-
-
-from os import rename
-from os.path import exists
-
-
-# importing the zipfile module
-from zipfile import ZipFile
-  
-import pyodbc
-
-import pandas as pd
-import numpy as np
-
-
-# Import custom library
-from utils import vprint
-verbose = True
-
-
-
-import warnings
-warnings.filterwarnings('ignore')
-
-
 if dicParams["doDownloadZips"] == True:
     # loading the temp.zip and creating a zip object
 	firstrun_download_files()

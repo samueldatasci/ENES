@@ -95,7 +95,7 @@ def get_dfResultAnalise_from_Parquet():
 	# Apenas com TemInterno = 1
 
 	parquetPath = dicParams['dataFolderParquet']
-	dfResultAnalise.to_parquet(parquetPath + 'dfResultAnalise.parquet.gzip', compression='gzip')  
+	dfResultAnalise = pd.read_parquet(parquetPath + 'dfResultAnalise.parquet.gzip')
 
 	return(dfResultAnalise)
 
@@ -349,8 +349,7 @@ def get_dfResultados_from_MDB():
 
 	# LOAD Resultados for all years
 
-	for ano in range(2022, 2021-1, -1):
-	#for ano in range(2022, 2008-1, -1):
+	for ano in range(2022, 2008-1, -1):
 		try:
 			# Establish a connection to the database
 			mdbfile = dicParams['dataFolderMDB'] +  'ENES'+str(ano)+'.mdb'
