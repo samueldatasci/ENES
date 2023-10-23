@@ -1,6 +1,6 @@
 # ImportUtils
 
-
+# region imports
 import pandas as pd
 import numpy as np
 import yaml
@@ -20,9 +20,8 @@ import wget
 #from sqlalchemy import create_engine
 import traceback
 
+#endregion
 
-# from main import dicParams
-# verbose = dicParams["verbose"]
 
 def firstrun_download_files():
 	# download files in dicFiles from the Internet
@@ -47,6 +46,8 @@ def firstrun_extract_MDBs():
 			rename(dicParams['dataFolderMDB'] + filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb")
 
 
+# region Parquet Imports
+
 def get_dfGeo_from_Parquet():
 	'''Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from parquet files.
 	'''
@@ -65,7 +66,6 @@ def get_dfSitFreq_from_Parquet():
 	dfSitFreq = pd.read_parquet(parquetPath + 'dfSitFreq.parquet.gzip')  
 	return dfSitFreq
 
-
 def get_dfSchools_from_Parquet():
 	'''Return dataframe with School information. Obtain data from parquet files.
 	'''
@@ -75,7 +75,6 @@ def get_dfSchools_from_Parquet():
 	dfSchools = pd.read_parquet(parquetPath + 'dfSchools.parquet.gzip')  
 	return dfSchools
 
-
 def get_dfCursos_from_Parquet():
 	'''Return dataframe with Course information. Obtain data from parquet files.'''
 	from main import dicParams, dicFiles
@@ -84,7 +83,6 @@ def get_dfCursos_from_Parquet():
 	dfCursos = pd.read_parquet(parquetPath + 'dfCursos.parquet.gzip')  
 	return dfCursos
 
-
 def get_dfExames_from_Parquet():
 	'''Return dataframe with Exam information. Obtain data from parquet files.'''
 	from main import dicParams, dicFiles
@@ -92,7 +90,6 @@ def get_dfExames_from_Parquet():
 	parquetPath = dicParams['dataFolderParquet']
 	dfExames = pd.read_parquet(parquetPath + 'dfExames.parquet.gzip')  
 	return dfExames
-
 
 def get_dfResultados_from_Parquet():
 	'''Return dataframe with Exam Results information. Obtain data from parquet files.'''
@@ -105,8 +102,6 @@ def get_dfResultados_from_Parquet():
 	#print(dfResultados.groupby('ano').count())
 
 	return dfResultados
-
-
 
 def get_dfResultAnalise_from_Parquet():
 	'''Return dataframe with relevant subset of Exam Results information. Obtain data from parquet files.'''
@@ -123,9 +118,19 @@ def get_dfResultAnalise_from_Parquet():
 
 	return(dfResultAnalise)
 
+def get_dfAll_from_Parquet():
+	'''Return dataframe with all data joined, from parquet files.'''
+	from main import dicParams, dicFiles
+
+	parquetPath = dicParams['dataFolderParquet']
+	dfAll = pd.read_parquet(parquetPath + 'dfAll.parquet.gzip')
+
+	return( dfAll)
+
+# endregion
 
 
-
+# region MDB Imports
 
 def get_dfGeo_from_MDB():
 	'''
@@ -172,9 +177,6 @@ def get_dfGeo_from_MDB():
 
 	return dfGeo
 
-
-
-
 def get_dfSitFreq_from_MDB():
 	'''
 	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from MDB files.
@@ -201,11 +203,6 @@ def get_dfSitFreq_from_MDB():
 
 	return dfSitFreq
 
-
-
-
-
-
 def get_dfSchools_from_MDB():
 	'''
 	Return dataframe with School information. Obtain data from MDB files.
@@ -222,7 +219,7 @@ def get_dfSchools_from_MDB():
 	connection = pyodbc.connect(connection_string)
 
 	# Execute SQL query
-	SQL = "SELECT 2022 as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, CodDGEEC FROM tblEscolas;"
+	SQL = "SELECT 2022 as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
 	dfSchools = pd.read_sql(SQL, connection)
 
 	# Close the connection
@@ -266,10 +263,6 @@ def get_dfSchools_from_MDB():
 		except Exception as ex:
 			print("Ano:",ano," - Erro: ", ex.message)
 
-
-	# Assuming 'CodDGEEC' is an integer column
-	#dfSchools['CodDGEEC'] = dfSchools['CodDGEEC'].astype(bytes)
-
 	# Assuming 'CodDGEEC' is an integer column
 	dfSchools['CodDGEEC'] = dfSchools['CodDGEEC'].astype(str)
 
@@ -277,9 +270,6 @@ def get_dfSchools_from_MDB():
 	dfSchools.to_parquet(parquetPath + 'dfSchools.parquet.gzip', compression='gzip')  
 
 	return dfSchools
-
-
-
 
 def get_dfCursos_from_MDB():
 	'''
@@ -321,8 +311,6 @@ def get_dfCursos_from_MDB():
 
 	return( dfCursos)
 
-
-
 def get_dfExames_from_MDB():
 	'''
 	Return dataframe with Exam information. Obtain data from MDB files.
@@ -363,10 +351,6 @@ def get_dfExames_from_MDB():
 
 	return dfExames
 
-
-
-
-
 def get_dfResultados_from_MDB():
 	'''
 	Return dataframe with Exam Results information. Obtain data from MDB files.
@@ -391,6 +375,8 @@ def get_dfResultados_from_MDB():
 				SQL = "Select " + str(ano) + " as ano, *, '?' as ParaCFCEPE from tblHomologa_" + str(ano) + ";"
 
 			dfResultadosAno = pd.read_sql(SQL, connection)
+			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
+			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
 
 			#df[ano] = dfResultadosAno
 
@@ -408,10 +394,6 @@ def get_dfResultados_from_MDB():
 	dfResultados.to_parquet(parquetPath + 'dfResultados.parquet.gzip', compression='gzip')
 
 	return( dfResultados)
-
-
-
-
 
 def get_dfResultAnalise_from_MDB():
 	'''
@@ -436,6 +418,23 @@ def get_dfResultAnalise_from_MDB():
 
 	return( dfResultAnalise)
 
+# endregion
+
+# region dfAll from Datasets
+def get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados):
+	dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='left')
+	dfAll = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner').merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+
+	parquetPath = dicParams['dataFolderParquet']
+	dfAll.to_parquet(parquetPath + 'dfAll.parquet.gzip', compression='gzip')
+
+	return( dfAll)
+
+# endregion
+
+
+# region print utilities
+
 
 def vprint(*args, **kwargs):
 	from main import dicParams
@@ -451,4 +450,6 @@ def vprint_time(start_time = 0, prefix = ''):
 		elapsed_time = current_time - start_time
 		vprint(prefix + 'Current time: ' + str(datetime.datetime.now()) + '; Elapsed time: ' + str(datetime.timedelta(seconds=elapsed_time)))
 	return current_time
+
+# endregion
 

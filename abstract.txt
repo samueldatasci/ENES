@@ -1,0 +1,34 @@
+We propose to study the results of the exams taken in first phase in 2019 in order to enter higher education.
+
+We are conducting an observational study, as we do not control any of the study's variables, but rather observe secondary quantitative data.
+
+Our study has the unusual aspect that we can measure the population's parameters, rather than assessing this parameters through sampling and statistical inference. So we do not have to deal with the limitations that arise from sampling, namely sampling bias. We also don't have to deal with other bias factors such as human response.
+
+Reference:
+Chapter 1.2, Sampling from a population, pg. 16
+Statistics Unlocking the Power of Data (Robin H. Lock, Patti Frazer Lock etc.)
+
+So instead of establishing an interval for the population's parameter and defining the confidence for that interval, we can get the atual population parameter and without the need for a confidence degree.
+
+
+
+
+
+
+rse is composed of the Secondary Education exams taken at first phase in Portugal by internal students.
+Instead of using sample statistics, we are able to calculate the actual population parameters.
+
+
+Published on May 14, 2020 by Pritha Bhandari. Revised on December 5, 2022.
+From https://www.scribbr.com/methodology/population-vs-sample/
+
+Example: Collecting data from a population
+A high school administrator wants to analyze the final exam scores of all graduating seniors to see if there is a trend. Since they are only interested in applying their findings to the graduating seniors in this high school, they use the whole population dataset.
+
+(...)
+
+You can use estimation or hypothesis testing to estimate how likely it is that a sample statistic differs from the population parameter.
+
+
+
+

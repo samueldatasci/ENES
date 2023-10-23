@@ -5,6 +5,7 @@ dicParams = {}
 dicFiles = {}
 global verbose
 
+#region imports
 import pandas as pd
 import numpy as np
 import yaml
@@ -27,6 +28,7 @@ from ImportUtils import get_dfGeo_from_Parquet, get_dfSchools_from_Parquet, get_
 from ImportUtils import firstrun_download_files, firstrun_extract_MDBs
 
 import warnings
+#endregion imports
 
 
 # Specify the file path where you want to save the YAML data
@@ -44,8 +46,12 @@ if dicParams["ignore_known_warnings"] == True:
 
 
 
+def mit():
+	verbose = True
+	get_dfResultAnalise_from_MDB()
 
-def it():
+
+def xit():
 		
 
 	print("Running...")
@@ -97,6 +103,14 @@ def it():
 		vprint("dfResultAnalise.shape: ", dfResultAnalise.shape)
 		current_time = vprint_time(current_time, 'Loaded dfResultAnalise from MDB...')
 
+
+		get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados)
+		dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='left')
+		dfAll = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner').merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+		vprint("dfAll.shape: ", dfAll.shape)
+		current_time = vprint_time(current_time, 'Created dfAll from MDB...')
+
+
 	else:
 		
 		# Load datasets from parquet files
@@ -136,4 +150,4 @@ def it():
 
 
 if __name__ == '__main__':
-	it()
+	mit()
