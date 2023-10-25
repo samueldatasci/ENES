@@ -244,7 +244,8 @@ def get_dfSchools_from_MDB():
 			dfUpdates = pd.read_sql(SQL, connection)
 
 			# Identify rows in dfUpdates that don't exist in dfSchools
-			mask = ~dfUpdates[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1).isin(dfSchools[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1))
+			#mask = ~dfUpdates[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1).isin(dfSchools[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1))
+			mask = ~dfUpdates[['Escola']].apply(tuple, axis=1).isin(dfSchools[['Escola']].apply(tuple, axis=1))
 
 			# Filter rows in dfUpdates based on the mask
 			dfUpdates = dfUpdates[mask]
@@ -301,7 +302,7 @@ def get_dfCursos_from_MDB():
 			else:
 				dfCursos = dfCursos.append(dfCursosAno)
 		except:
-			print("Ano {} - ERRO!".format(ano))
+			print("get_dfCursos_from_MDB, Ano {} - ERRO!".format(ano))
 
 	# Close the connection
 	connection.close()
@@ -341,7 +342,7 @@ def get_dfExames_from_MDB():
 			else:
 				dfExames = dfExames.append(dfExamesAno)
 		except:
-			print("Ano {} - ERRO!".format(ano))
+			print("get_dfExames_from_MDB, Ano {} - ERRO!".format(ano))
 
 	# Close the connection
 	connection.close()
@@ -378,6 +379,8 @@ def get_dfResultados_from_MDB():
 			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
 			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
 
+			dfResultadosAno = dfResultadosAno.dropna(subset=['Class_Exam'])
+
 			#df[ano] = dfResultadosAno
 
 			if "dfResultados" not in locals():
@@ -385,10 +388,10 @@ def get_dfResultados_from_MDB():
 			else:
 				dfResultados = dfResultados.append(dfResultadosAno)
 		except:
-			print("Ano {} - ERRO!".format(ano))
+			print("get_dfResultados_from_MDB, Ano {} - ERRO!".format(ano))
 
-		# Close the connection
-		connection.close()
+	# Close the connection
+	connection.close()
 
 	parquetPath = dicParams['dataFolderParquet']
 	dfResultados.to_parquet(parquetPath + 'dfResultados.parquet.gzip', compression='gzip')
@@ -422,8 +425,24 @@ def get_dfResultAnalise_from_MDB():
 
 # region dfAll from Datasets
 def get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados):
-	dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='left')
-	dfAll = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner').merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+	from main import dicParams, dicFiles
+	print("dfSchools.shape: ", dfSchools.shape)
+	print("dfGeo.shape: ", dfGeo.shape)
+	dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='inner')
+	print("dfFullSchools.shape (inner join): ", dfFullSchools.shape)
+
+	print("....")
+	print("dfResultados.shape: ", dfResultados.shape)
+	print("dfFullSchools.shape: ", dfFullSchools.shape)
+	dfAll1 = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner')
+	print("dfAll1.shape inner: ", dfAll1.shape)
+
+
+	print("....")
+	print("dfAll1.shape: ", dfAll1.shape)
+	print("dfExames.shape: ", dfExames.shape)
+	dfAll = dfAll1.merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+	print("dfAll.shape: ", dfAll.shape)
 
 	parquetPath = dicParams['dataFolderParquet']
 	dfAll.to_parquet(parquetPath + 'dfAll.parquet.gzip', compression='gzip')

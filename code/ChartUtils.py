@@ -95,32 +95,45 @@ def linechart( df, group_variable = "Class_Exam", xlim = (0, 20), ylim = (0, Non
 
 
 
-def barchart_nseries(df, index='ano', columns='Fase', values='count', title=None, xlabel=None, ylabel=None, legendlabel=None, grid=True, stacked=False, colormap='Set3'):
+def barchart_nseries(df, xAxis='ano', dataSeries='Fase', values='count', title=None, xlabel=None, ylabel=None, \
+					   legendlabel=None, grid=True, stacked=False, colormap='Set3', normalize=False):
 	# Pivot the DataFrame to create the data for the stacked bar chart
 
-	dfAgreg = df.groupby([index, columns]).size().reset_index(name=values)
-	pivot_df = dfAgreg.pivot(index=index, columns=columns, values=values)
+	#dfAgreg = df.groupby([index, columns]).size(normalize=True).reset_index(name=values)
+	#pivot_df = dfAgreg.pivot(index=index, columns=columns, values=values)
+
+	df_grouped = df.groupby(xAxis)[dataSeries].value_counts(normalize=normalize).unstack(dataSeries)
+	#print(df_grouped)
+
+	# df_grouped = df.groupby('ano')['Fase'].value_counts(normalize=False).unstack('Fase')
+	# print(df_grouped)
+	# df_grouped = df.groupby('ano')['Fase'].value_counts(normalize=True).unstack('Fase')
+	# print(df_grouped)
+	#df_grouped.plot.bar(stacked=True)
+	# pivot_df.plot(kind='bar', stacked=True, colormap='Set3')
+
+	df_grouped.plot(kind='bar', stacked=stacked, colormap=colormap)
+
 
 	# Plot the stacked bar chart
-	pivot_df.plot(kind='bar', stacked=True, colormap='Set3')
-
+	
 	if xlabel is None:
-		xlabel = index.capitalize()
+		xlabel = xAxis.capitalize()
 	if ylabel is None:
 		ylabel = 'Contagem'
 	if legendlabel is None:
-		legendlabel = columns.capitalize()
+		legendlabel = dataSeries.capitalize()
 	if title is None:
-		title = "Exames por " + index.capitalize() + " e por " + columns.capitalize()
+		title = "Exames por " + xAxis.capitalize() + " e por " + dataSeries.capitalize()
 
 
-	plt.xlabel(xlabel)
-	plt.ylabel(ylabel)
-	plt.title('Stacked Bar Chart by Phase')
+	plt.xlabel(xlabel=xlabel)
+	plt.ylabel(ylabel=ylabel)
+	plt.title( label=title, loc='center', pad=20, fontsize=12, fontweight='bold')
 	plt.legend(title=legendlabel)
 	plt.grid(grid)
-	plt.show()
 
+	plt.show()
 
 
 def barchart( df, group_variable = "Class_Exam", \

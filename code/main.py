@@ -25,7 +25,7 @@ import wget
 from ImportUtils import vprint, vprint_time
 from ImportUtils import get_dfGeo_from_MDB, get_dfSchools_from_MDB, get_dfCursos_from_MDB, get_dfExames_from_MDB, get_dfResultados_from_MDB, get_dfResultAnalise_from_MDB
 from ImportUtils import get_dfGeo_from_Parquet, get_dfSchools_from_Parquet, get_dfCursos_from_Parquet, get_dfExames_from_Parquet, get_dfResultados_from_Parquet, get_dfResultAnalise_from_Parquet
-from ImportUtils import firstrun_download_files, firstrun_extract_MDBs
+from ImportUtils import firstrun_download_files, firstrun_extract_MDBs, get_dfAll_from_datasets, get_dfAll_from_Parquet
 
 import warnings
 #endregion imports
@@ -45,13 +45,19 @@ if dicParams["ignore_known_warnings"] == True:
 	warnings.filterwarnings('ignore')
 
 
+def bit():
+	#get_dfAll_from_datasets()
+	from main import dicParams, dicFiles
 
-def mit():
-	verbose = True
-	get_dfResultAnalise_from_MDB()
+	dfGeo = get_dfGeo_from_Parquet()
+	dfSchools = get_dfSchools_from_Parquet()
+	dfExames = get_dfExames_from_Parquet()
+	dfResultados = get_dfResultados_from_Parquet()
+	dfa = get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados)
+	#dfa = get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados)
 
 
-def xit():
+def it():
 		
 
 	print("Running...")
@@ -102,13 +108,9 @@ def xit():
 		dfResultAnalise = get_dfResultAnalise_from_MDB()
 		vprint("dfResultAnalise.shape: ", dfResultAnalise.shape)
 		current_time = vprint_time(current_time, 'Loaded dfResultAnalise from MDB...')
-
-
-		get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados)
-		dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='left')
-		dfAll = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner').merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+		dfAll = get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados)
 		vprint("dfAll.shape: ", dfAll.shape)
-		current_time = vprint_time(current_time, 'Created dfAll from MDB...')
+		current_time = vprint_time(current_time, 'Created dfAll from datasets...')
 
 
 	else:
@@ -133,6 +135,9 @@ def xit():
 		dfResultAnalise = get_dfResultAnalise_from_Parquet()
 		vprint("dfResultAnalise.shape: ", dfResultAnalise.shape)
 		current_time = vprint_time(current_time, 'Loaded dfResultAnalise from Parquet...')
+		dfAll = get_dfAll_from_Parquet()
+		vprint("dfAll.shape: ", dfAll.shape)
+		current_time = vprint_time(current_time, 'Created dfAll from Parquet...')
 
 	current_time = vprint_time(current_time, 'After load datasets...')
 
@@ -150,4 +155,19 @@ def xit():
 
 
 if __name__ == '__main__':
-	mit()
+	it()
+	# print(1)
+	# dfGeo = get_dfGeo_from_Parquet()
+	# dfSchools = get_dfSchools_from_Parquet()
+	# dfExames = get_dfExames_from_Parquet()
+	# print(2)
+	# dfResultados = get_dfResultados_from_Parquet()
+
+	# print(3)
+	# dfAll = get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados)
+	# print(4)
+
+	# print("dfResultados.shape: ", dfResultados.shape)
+	# print("dfAll.shape: ", dfAll.shape)
+	# dfResultados.shape:  (5901336, 18)
+	# dfAll.shape:  (5968595, 31)

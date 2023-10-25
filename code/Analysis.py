@@ -4,8 +4,9 @@ import pandas as pd
 from main import dicParams, dicFiles
 from ImportUtils import vprint, vprint_time
 #from ImportUtils import get_dfGeo_from_MDB, get_dfSchools_from_MDB, get_dfCursos_from_MDB, get_dfExames_from_MDB, get_dfResultados_from_MDB, get_dfResultAnalise_from_MDB
+#from ImportUtils import get_dfAll_from_datasets
 from ImportUtils import get_dfGeo_from_Parquet, get_dfSchools_from_Parquet, get_dfCursos_from_Parquet, get_dfExames_from_Parquet, get_dfResultados_from_Parquet, get_dfResultAnalise_from_Parquet
-
+from ImportUtils import get_dfAll_from_Parquet
 import matplotlib.pyplot as plt
 
 # Set the locale to your system's default (for the desired thousands separator)
@@ -53,20 +54,27 @@ current_time = vprint_time(current_time, 'Loaded dfResultAnalise from Parquet...
 # endregion
 
 
-dfExamesPorAno = dfResultados.groupby(['ano', 'Fase']).size().reset_index(name='counts')
+# dfExamesPorAno = dfResultados.groupby(['ano', 'Fase']).size().reset_index(name='counts')
 # PUBPRIV dfExamesPorSexo = dfResultados.groupby(['ano', 'Sexo']).size().reset_index(name='counts')
-dfExamesPorSexo = dfResultados.groupby(['ano', 'Sexo']).size().reset_index(name='counts')
+# dfExamesPorSexo = dfResultados.groupby(['ano', 'Sexo']).size().reset_index(name='counts')
 #print(dfExamesPorAno.head(10))
 #print(dfResultados.head(10))
 
 #barchart_nseries(dfExamesPorAno, index='ano', columns='Fase', values='counts')
-barchart_nseries(dfResultados, index='ano', columns='Fase', values='counts')
-barchart_nseries(dfResultados, index='ano', columns='Sexo', values='counts')
+#barchart_nseries(dfResultados, index='ano', columns='Fase', values='counts')
+#barchart_nseries(dfResultados, index='ano', columns='Sexo', values='counts')
 # barchart_nseries(dfResultados, index='ano', columns='Fase', values='count',  title=None, xlabel='Ano', ylabel=None, grid=True, stacked=False, colormap='Set3')
 
 #barchart(dfExamesPorAno, "ano", "counts", "Fase", "Número de exames", "Ano", "Distribuição de exames por ano e fase", True)
 
+dfAll = get_dfAll_from_Parquet()
+vprint("dfAll.shape: ", dfAll.shape)
+current_time = vprint_time(current_time, 'Loaded dfAll from Parquet...')
 
+dfExamesPorPubPriv = dfAll.groupby(['ano', 'PubPriv']).size().reset_index(name='counts')
+#barchart_nseries(dfExamesPorPubPriv, index='ano', columns='PubPriv', values='counts')
+barchart_nseries(dfAll, index='ano', columns='PubPriv', values='counts')
+print("done")
 
 # region Create charts comparing All Years, 2019 and 2020
 # dfResultAnalise = dfResultados
