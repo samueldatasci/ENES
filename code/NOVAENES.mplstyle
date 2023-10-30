@@ -8,7 +8,7 @@ grid.color : silver
 
 
 # For line charts
-lines.linewidth : 2
+lines.linewidth : 1
 lines.markersize : 10
 
 

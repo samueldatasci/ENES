@@ -56,8 +56,8 @@ def chart(kind="line", df=None, stacked=False, normalize=False, \
 	xvar=None, xlabel = '', xlimit=None, xAxisScale=None, xAxisScaleSymbol=None, \
 	yvar='count', ylabel='Number of exams', ylimit=(0, None), yAxisScale=None, yAxisScaleSymbol=None, \
 	zvar="", zlabel = "", \
-	title=None, grid=True, colormap='NOVAIMS', legend=True, xticks=None, yticks=None, figsize=(9,6), \
-	dots = None):
+	title=None, grid=True, colormap='NOVAIMS', legend=True, xticks=None, yticks=None, figsize=(8,4.5), \
+	dots = []):
 	'''Minimum parameters: chart(kind="line", df=dataframe, xvar='Class_Exam')'''
 	# Pivot the DataFrame to create the data for the stacked bar chart
 
@@ -92,7 +92,7 @@ def chart(kind="line", df=None, stacked=False, normalize=False, \
 				ylim=ylimit, ylabel=ylabel, \
 				colormap=colormap, figsize=figsize, title=title, rot=0, fontsize=12, legend=legend,
 				ax=None, subplots=False, xticks=xticks, yticks=yticks)
-		# 		y=yvar,
+
 
 	if legend:
 		plt.legend(title = zlabel)
@@ -130,27 +130,26 @@ def chart(kind="line", df=None, stacked=False, normalize=False, \
 	if kind == "line":
 		
 		# Show datapoint for 95 and 94, with number of exams and the datapoint value
-		if not dots is None:
-			for dot in dots:
-				dotx = dot[0]
-				dotalign = dot[1]
-				dotcolor = dot[2]
-				dot_marker = dot[3]
-				dot_marker_size = dot[4]
-				try:
-					doty = df[xvar].value_counts().sort_index()[dotx]
+		for dot in dots:
+			dotx = dot[0]
+			dotalign = dot[1]
+			dotcolor = dot[2]
+			dot_marker = dot[3]
+			dot_marker_size = dot[4]
+			try:
+				doty = df[xvar].value_counts().sort_index()[dotx]
 
-				except KeyError as ke:
-					doty = 0
+			except KeyError as ke:
+				doty = 0
 
-				dotlabel = "{:.1f}".format(dotx) + ": " + locale.format_string("%d", doty, grouping=True)
-				plt.scatter(dotx, doty, color=dot[2], marker=dot_marker, s=dot_marker_size)
-				if dotalign == 'left':
-					dotx = dotx + 0.1
-				elif dotalign == 'right':
-					dotx = dotx - 0.1
-					
-				plt.text(dotx, doty, dotlabel, horizontalalignment=dotalign, color=dot[2], bbox=dict(facecolor='white', edgecolor='None', pad=0.1))
+			dotlabel = "{:.1f}".format(dotx) + ": " + locale.format_string("%d", doty, grouping=True)
+			plt.scatter(dotx, doty, color=dot[2], marker=dot_marker, s=dot_marker_size)
+			if dotalign == 'left':
+				dotx = dotx + 0.1
+			elif dotalign == 'right':
+				dotx = dotx - 0.1
+				
+			plt.text(dotx, doty, dotlabel, horizontalalignment=dotalign, color=dot[2], bbox=dict(facecolor='white', edgecolor='None', pad=0.1))
 #endregion chart
 
 
