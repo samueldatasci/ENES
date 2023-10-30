@@ -32,7 +32,9 @@ import warnings
 
 
 # Specify the file path where you want to save the YAML data
-path_dicts_params = "c:\\ENES\\"
+#path_dicts_params = "c:\\ENES\\"
+#path_dicts_params = ".\\"
+path_dicts_params = ""
 
 # Define dictionaries from the YAML files
 with open(path_dicts_params + "Params.yaml", "r") as file:

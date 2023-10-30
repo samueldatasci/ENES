@@ -152,8 +152,24 @@ def get_dfGeo_from_MDB():
 	SQL = 'SELECT Nuts3, Descr as DescrNuts3 FROM tblNuts3;'
 	dfNuts3 = pd.read_sql(SQL, connection)
 
+	#Define Nuts2 as the first two characters in Nuts3
+	dfNuts3["Nuts2"] = dfNuts3["Nuts3"].str[0:2]
 
-	# Get Distrito+Concelho+Nuts from the 2021 database
+	print(dfNuts3)
+	
+	# Define dictionary for Nuts2 description
+	dicNuts2 = {}
+	dicNuts2["11"] = "Norte"
+	dicNuts2["15"] = "Algarve"
+	dicNuts2["16"] = "Centro"
+	dicNuts2["17"] = "AM Lisboa"
+	dicNuts2["18"] = "Alentejo"
+	dicNuts2["20"] = "RA Açores"
+	dicNuts2["30"] = "RA Madeira"
+	dicNuts2["90"] = "Estrangeiro"
+
+	# Add Nuts2 description to the dataframe
+	dfNuts3["DescrNuts2"] = dfNuts3["Nuts2"].map(dicNuts2)
 
 	# Establish a connection to the database
 	mdbfile = dicParams['dataFolderMDB'] +  'ENES2021.mdb'
@@ -176,6 +192,7 @@ def get_dfGeo_from_MDB():
 	dfGeo.to_parquet(parquetPath + 'dfGeo.parquet.gzip', compression='gzip')  
 
 	return dfGeo
+
 
 def get_dfSitFreq_from_MDB():
 	'''
@@ -334,15 +351,23 @@ def get_dfExames_from_MDB():
 			
 			dfExamesAno = pd.read_sql(SQL, connection)
 
-			# print("Ano {} - exames: {}".format(ano, dfExamesAno.shape[0]))
-			# print(dfExamesAno)
-
 			if "dfExames" not in locals():
 				dfExames = dfExamesAno
 			else:
 				dfExames = dfExames.append(dfExamesAno)
 		except:
 			print("get_dfExames_from_MDB, Ano {} - ERRO!".format(ano))
+
+		replacement_dict = {}
+		replacement_dict['Biologia e Geologia'] = 'Biologia/Geol.'
+		replacement_dict['Física e Química A'] = 'Física/Quim. A'
+		replacement_dict['Matemática Aplic. às Ciências Soc.'] = 'MACS'
+		replacement_dict['Geometria Descritiva A'] = 'Geometr. Desc.A'
+		replacement_dict['História da Cultura e das Artes'] = 'Hist.Cult.Artes'
+		replacement_dict['Literatura Portuguesa'] = 'Liter.Portuguesa'
+		replacement_dict['Espanhol (iniciação)'] = 'Espanhol (inic.)'
+		dfExames['DescrExameAbrev'] = dfExames['DescrExame'].replace(replacement_dict)
+
 
 	# Close the connection
 	connection.close()
@@ -371,17 +396,18 @@ def get_dfResultados_from_MDB():
 
 			# Execute SQL query
 			if ano > 2015:
-				SQL = "Select " + str(ano) + " as ano, * from tblHomologa_" + str(ano) + ";"
+				SQL = "Select " + str(ano) + " as ano, * from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
 			else:
-				SQL = "Select " + str(ano) + " as ano, *, '?' as ParaCFCEPE from tblHomologa_" + str(ano) + ";"
+				SQL = "Select " + str(ano) + " as ano, *, '?' as ParaCFCEPE from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
 
 			dfResultadosAno = pd.read_sql(SQL, connection)
 			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
 			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
-
+			dfResultadosAno['Class_Exam_Rounded'] = (dfResultadosAno['Class_Exam'] + 0.001).round().astype(int)
 			dfResultadosAno = dfResultadosAno.dropna(subset=['Class_Exam'])
 
-			#df[ano] = dfResultadosAno
+			#use a lambda function to define new column "Covid" with value "Before" if ano < 2020, else "After"
+			dfResultadosAno["Covid"] = dfResultadosAno.apply(lambda row: "Before" if row["ano"] < 2020 else "After", axis=1)
 
 			if "dfResultados" not in locals():
 				dfResultados = dfResultadosAno
@@ -426,26 +452,15 @@ def get_dfResultAnalise_from_MDB():
 # region dfAll from Datasets
 def get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados):
 	from main import dicParams, dicFiles
-	print("dfSchools.shape: ", dfSchools.shape)
-	print("dfGeo.shape: ", dfGeo.shape)
+
 	dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='inner')
-	print("dfFullSchools.shape (inner join): ", dfFullSchools.shape)
-
-	print("....")
-	print("dfResultados.shape: ", dfResultados.shape)
-	print("dfFullSchools.shape: ", dfFullSchools.shape)
 	dfAll1 = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner')
-	print("dfAll1.shape inner: ", dfAll1.shape)
-
-
-	print("....")
-	print("dfAll1.shape: ", dfAll1.shape)
-	print("dfExames.shape: ", dfExames.shape)
 	dfAll = dfAll1.merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
-	print("dfAll.shape: ", dfAll.shape)
 
 	parquetPath = dicParams['dataFolderParquet']
 	dfAll.to_parquet(parquetPath + 'dfAll.parquet.gzip', compression='gzip')
+
+	del dfFullSchools, dfAll1
 
 	return( dfAll)
 
