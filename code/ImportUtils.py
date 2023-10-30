@@ -362,7 +362,7 @@ def get_dfExames_from_MDB():
 		replacement_dict['Biologia e Geologia'] = 'Biologia/Geol.'
 		replacement_dict['Física e Química A'] = 'Física/Quim. A'
 		replacement_dict['Matemática Aplic. às Ciências Soc.'] = 'MACS'
-		replacement_dict['Geometria Descritiva A'] = 'Geometr. Desc.A'
+		replacement_dict['Geometria Descritiva A'] = 'Geometr.D.A'
 		replacement_dict['História da Cultura e das Artes'] = 'Hist.Cult.Artes'
 		replacement_dict['Literatura Portuguesa'] = 'Liter.Portuguesa'
 		replacement_dict['Espanhol (iniciação)'] = 'Espanhol (inic.)'
