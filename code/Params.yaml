@@ -1,9 +1,0 @@
-doDownloadZips: True
-doExtractMDB: True
-doCreateDatasets: True
-dataFolder: C:/ENES/
-dataFolderMDB: C:/ENES/MDB/
-dataFolderZIP: C:/ENES/ZIP/
-dataFolderParquet: C:/ENES/Parquet/
-verbose: False
-ignore_known_warnings: True

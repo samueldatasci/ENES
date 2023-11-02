@@ -1,3 +1,3 @@
 @Echo Off
 activate base
-run python main.py
+ECHO python main.py

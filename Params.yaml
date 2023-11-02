@@ -1,6 +1,6 @@
 doDownloadZips: False
 doExtractMDB: False
-doCreateDatasets: True
+doCreateDatasets: False
 dataFolder: C:/ENES/
 dataFolderMDB: C:/ENES/MDB/
 dataFolderZIP: C:/ENES/ZIP/
