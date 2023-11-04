@@ -23,7 +23,7 @@ import traceback
 #endregion
 
 
-def firstrun_download_files():
+def download_zip_files():
 	# download files in dicFiles from the Internet
 	from main import dicParams, dicFiles
 	for key in dicFiles.keys():
@@ -32,7 +32,7 @@ def firstrun_download_files():
 			wget.download(dicFiles[key], dicParams['dataFolderZIP'] + key)
 
 
-def firstrun_extract_MDBs():
+def extract_MDBs():
 	from main import dicParams, dicFiles
 	for key in dicFiles.keys():
 		zipfile = dicParams['dataFolderZIP'] + key
@@ -103,20 +103,6 @@ def get_dfResultados_from_Parquet():
 
 	return dfResultados
 
-def get_dfResultAnalise_from_Parquet():
-	'''Return dataframe with relevant subset of Exam Results information. Obtain data from parquet files.'''
-	from main import dicParams, dicFiles
-	# Resultados dos Exames
-	# Apenas Fase 1
-	# Apenas com TemInterno = 1
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfResultAnalise = pd.read_parquet(parquetPath + 'dfResultAnalise.parquet.gzip')
-
-	# print record count by ano
-	#print(dfResultAnalise.groupby('ano').count())
-
-	return(dfResultAnalise)
 
 def get_dfAll_from_Parquet():
 	'''Return dataframe with all data joined, from parquet files.'''
@@ -127,8 +113,56 @@ def get_dfAll_from_Parquet():
 
 	return( dfAll)
 
-# endregion
+def get_dfAllFase1_from_Parquet():
+	'''Return dataframe with all data joined, from parquet files, just for Phase 1 exams.'''
+	from main import dicParams, dicFiles
 
+	parquetPath = dicParams['dataFolderParquet']
+	dfAllFase1 = pd.read_parquet(parquetPath + 'dfAllFase1.parquet.gzip')
+
+	return( dfAllFase1)
+
+def get_dfInfoEscolas_from_Parquet():
+	'''Return dataframe with all data joined, in the conditions considered by Infoescolas, note 6.'''
+	from main import dicParams, dicFiles
+
+
+	vprint("## Valor esperado ##")
+	vprint("https://infoescolas.medu.pt/secundario/NI09.pdf")
+
+	vprint("Ponto 2.6")
+	vprint("No cálculo do indicador do alinhamento apenas são consideradas:")
+	vprint('a) as notas internas dos alunos da escola, # df["TemInterno"] == "S"')
+	vprint('b) matriculados em cursos Científico-Humanísticos, # df["SubtipoCurso"].isin(["N01"])')
+	vprint('c) que realizaram exames nacionais na 1a fase, # df["Fase"] == "1"')
+	vprint('d) para aprovação, # df["ParaAprov"] == "S"')
+	vprint('e) como alunos internos. # df["Interno"] == "S"')
+	vprint('f) Além disso, apenas são consideradas as notas internas das disciplinas em que o aluno obteve uma classificação superior ou igual a 9,5 valores no respetivo exame nacional # df["Class_Exam"] == "S"')
+
+	vprint('##### NOTE1:')
+	vprint('It could make sense to also just include dfAllFase1["CIF"] > 9')
+	vprint('However, this is automatically the case, because students with internal grade <= 9 take the exame as external students')
+	vprint('By adding this filter, the number of observations remains unchanged.')
+
+	vprint('##### NOTE2:')
+	vprint('We could consider other SubtipoCurso, such as N04 (same as N01, but for "Ensino Recorrente")')
+
+	vprint('##### _List of values/description for curso subtipo N_')
+	vprint('SubTipo Descr')
+	vprint('N01 Cursos Científico-Humanísticos')
+	vprint('N02	Cursos Artísticos Especializados')
+	vprint('N03	Cursos Tecnológicos')
+	vprint('N04	Cursos Científico-Humanísticos do Ensino Recorrente')
+	vprint('N05	Cursos Tecnológicos do Ensino Recorrente')
+	vprint('N06	Cursos Artísticos Especializados do Ensino Recorrente')
+	vprint('N07	Cursos Profissionais')
+
+	parquetPath = dicParams['dataFolderParquet']
+	dfInfoEscolas = pd.read_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip')
+
+	return(dfInfoEscolas)
+
+#endregion
 
 # region MDB Imports
 
@@ -155,7 +189,7 @@ def get_dfGeo_from_MDB():
 	#Define Nuts2 as the first two characters in Nuts3
 	dfNuts3["Nuts2"] = dfNuts3["Nuts3"].str[0:2]
 
-	print(dfNuts3)
+	# print(dfNuts3)
 	
 	# Define dictionary for Nuts2 description
 	dicNuts2 = {}
@@ -193,7 +227,6 @@ def get_dfGeo_from_MDB():
 
 	return dfGeo
 
-
 def get_dfSitFreq_from_MDB():
 	'''
 	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from MDB files.
@@ -209,8 +242,10 @@ def get_dfSitFreq_from_MDB():
 	connection = pyodbc.connect(connection_string)
 
 	# Execute SQL query
-	SQL = "SELECT SitFreq, Descr, Defin FROM tblCodsSitFreq;"
+	#SQL = "SELECT SitFreq, Descr as SitFreqDescr, Defin as SitFreqDefin FROM tblCodsSitFreq union 'NA', 'Não indicado', 'Não indicado';"
+	SQL = "SELECT SitFreq, Descr as SitFreqDescr, Defin as SitFreqDefin FROM tblCodsSitFreq ;"
 	dfSitFreq = pd.read_sql(SQL, connection)
+
 
 	# Close the connection
 	connection.close()
@@ -306,7 +341,7 @@ def get_dfCursos_from_MDB():
 
 			# Execute SQL query
 			SQL = "Select " + str(ano) + " as ano, curso.Curso, curso.TpCurso as TipoCurso, curso.SubTipo as SubtipoCurso, curso.Descr as DescrCurso,"\
-			"tpcurso.Descr as DescrTipoCurso, tpcurso.Ano_Ini as TipoCurso_Ano_Ini, tpcurso.Ano_Term as TipoCirso_Ano_Term, tpcurso.Ordena as TipoCurso_Ordena,"\
+			"tpcurso.Descr as DescrTipoCurso, tpcurso.Ano_Ini as TipoCurso_Ano_Ini, tpcurso.Ano_Term as TipoCurso_Ano_Term, tpcurso.Ordena as TipoCurso_Ordena,"\
 			"subtipos.Descr as DescrSubtipoCurso "\
 			"From ( tblCursos curso inner join tblCursosTipos tpcurso on curso.TpCurso = tpcurso.TpCurso ) inner join tblCursosSubTipos subtipos on curso.SubTipo = subtipos.SubTipo;"
 
@@ -424,52 +459,56 @@ def get_dfResultados_from_MDB():
 
 	return( dfResultados)
 
-def get_dfResultAnalise_from_MDB():
-	'''
-	Return dataframe with relevant subset of Exam Results information. Obtain data from MDB files.
-	'''
-	from main import dicParams, dicFiles
-	# Resultados dos Exames
-	# Apenas Fase 1
-	# Apenas com TemInterno = 1
-
-	dfResultAnalise = get_dfResultados_from_MDB()
-
-	dfResultAnalise = dfResultAnalise[dfResultAnalise["Fase"]=='1']
-	#dfResultAnalise = dfResultAnalise[dfResultAnalise["TemInterno"]=='S'] -- For 2020 and after, this is always 'N'
-
-	# Reset the index if needed
-	dfResultAnalise.reset_index(drop=True, inplace=True)
-
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfResultAnalise.to_parquet(parquetPath + 'dfResultAnalise.parquet.gzip', compression='gzip')  
-
-	return( dfResultAnalise)
-
 # endregion
 
 # region dfAll from Datasets
-def get_dfAll_from_datasets(dfGeo, dfSchools, dfExames, dfResultados):
+def get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, dfSitFreq):
 	from main import dicParams, dicFiles
 
-	dfFullSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='inner')
-	dfAll1 = dfResultados.merge(dfFullSchools, left_on=['Escola'], right_on=['Escola'], how='inner')
-	dfAll = dfAll1.merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+	dfSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='inner')
+	dfAll = dfResultados.merge(dfSchools, left_on=['Escola'], right_on=['Escola'], how='inner')
 
+	dfAll = dfAll.merge(dfExames, left_on=['ano', 'Exame'], right_on=['ano', 'Exame'], how='inner')
+
+	dfAll = dfAll.merge(dfSitFreq, left_on=['SitFreq'], right_on=['SitFreq'], how='left')
+	dfAll["SitFreq"].fillna("ND", inplace=True)
+	dfAll["SitFreqDescr"].fillna("ND", inplace=True)
+	dfAll["SitFreqDefin"].fillna("ND", inplace=True)
+
+	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
+	dfAll = dfAll.merge(dfCursos, left_on=['ano', 'Curso'], right_on=['ano', 'Curso'], how='inner')
+	
 	parquetPath = dicParams['dataFolderParquet']
 	dfAll.to_parquet(parquetPath + 'dfAll.parquet.gzip', compression='gzip')
 
-	del dfFullSchools, dfAll1
-
 	return( dfAll)
 
+def get_dfAllFase1_from_datasets(dfAll):
+	from main import dicParams, dicFiles
+
+	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
+	dfAllFase1 = dfAll[dfAll["Fase"]=='1']
+	
+	parquetPath = dicParams['dataFolderParquet']
+	dfAllFase1.to_parquet(parquetPath + 'dfAllFase1.parquet.gzip', compression='gzip')
+
+	return( dfAllFase1)
+
+    
+def get_dfInfoEscolas_from_datasets(dfAllFase1):
+	from main import dicParams, dicFiles
+
+	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
+	dfInfoEscolas = dfAllFase1[ (dfAllFase1["TemInterno"] == "S") & (dfAllFase1["SubtipoCurso"].isin(["N01", "N04"])) & (dfAllFase1["Fase"] == "1") & (dfAllFase1["ParaAprov"] == "S") & (dfAllFase1["Interno"] == "S") & (dfAllFase1["Class_Exam"] > 9.4)]
+	
+	parquetPath = dicParams['dataFolderParquet']
+	dfInfoEscolas.to_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip', compression='gzip')
+
+	return( dfInfoEscolas)
 # endregion
 
 
 # region print utilities
-
-
 def vprint(*args, **kwargs):
 	from main import dicParams
 	if dicParams["verbose"] == True:
@@ -484,6 +523,4 @@ def vprint_time(start_time = 0, prefix = ''):
 		elapsed_time = current_time - start_time
 		vprint(prefix + 'Current time: ' + str(datetime.datetime.now()) + '; Elapsed time: ' + str(datetime.timedelta(seconds=elapsed_time)))
 	return current_time
-
 # endregion
-

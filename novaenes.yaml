@@ -1,0 +1,48 @@
+dicFiles:
+  ENES2008.zip: https://www.dge.mec.pt/sites/default/files/JNE/enes2008_0.zip
+  ENES2009.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2009.zip
+  ENES2010.zip: http://www.dge.mec.pt/sites/default/files/JNE/2010_enes.zip
+  ENES2011.zip: http://www.dge.mec.pt/sites/default/files/JNE/2011_enes.zip
+  ENES2012.zip: http://www.dge.mec.pt/sites/default/files/JNE/2012_enes_secun.zip
+  ENES2013.zip: http://www.dge.mec.pt/sites/default/files/JNE/2013_enes_sec.zip
+  ENES2014.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2014.zip
+  ENES2015.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2015_0.zip
+  ENES2016.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2016-media_2.zip
+  ENES2017.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2017-final.zip
+  ENES2018.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2018.zip
+  ENES2019.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2019.zip
+  ENES2020.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes_2020.zip
+  ENES2021.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2021.zip
+  ENES2022.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2022_bd_imprensa.zip
+dicParams:
+  dataFolder: C:/ENES/
+  dataFolderMDB: C:/ENES/MDB/
+  dataFolderParquet: C:/ENES/Parquet/
+  dataFolderZIP: C:/ENES/ZIP/
+  ignore_known_warnings: true
+  verbose: true
+dicParquetBase:
+  0: dfCursos
+  1: dfExames
+  2: dfSchools
+  3: dfGeo
+  4: dfResultados
+  5: dfSitFreq
+dicParquetExtra:
+  0: dfAll
+  1: dfAllFase1
+  2: dfInfoEscolas
+
+
+# ENEB2008.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2008-itens_1.zip
+# ENEB2009.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2009.zip
+# ENEB2010.zip: http://www.dge.mec.pt/sites/default/files/JNE/2010_eneb.zip
+# ENEB2011.zip: http://www.dge.mec.pt/sites/default/files/JNE/2011_eneb.zip
+# ENEB2012.zip: http://www.dge.mec.pt/sites/default/files/JNE/2012_eneb_eb.zip
+# ENEB2013.zip: http://www.dge.mec.pt/sites/default/files/JNE/2013_eneb_2_3ciclos.zip
+# ENEB2014.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2014.zip
+# ENEB2015.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2015.zip
+# ENEB2016.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2016.zip
+# ENEB2017.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2017-final.zip
+# ENEB2018.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2018_final_1.zip
+# ENEB2019.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2019_0.zip
