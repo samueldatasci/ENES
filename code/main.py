@@ -172,57 +172,57 @@ def it():
 		current_time = vprint_time(current_time, 'Loaded dfSitFreq from parquet...')
 
 
+	if False:
 
-
-	#parquetPath = dicParams['dataFolderParquet']
-	if createParquetBase == True:
-		# If we created the parquet base files, we need to create the parquet extra files
-		createParquetExtra = True
-	else:
-		createParquetExtra = False
-		for key in dicParquetExtra:
-			file = parquetPath + dicParquetExtra[key] + ".parquet.gzip"
-			if not exists(file):
-				print("Parquet extra file does not exist; creating it: " + file)
-				print("Creating all Parquet extra files from existing parquet files")
-				createParquetExtra = True
-				break
-	
-	if createParquetExtra == True:
-
-		print("Creating Extra parquet files from dataframes")
-
-		dfAll = get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, dfSitFreq)
-		print("dfAll.shape: ", dfAll.shape)
-		current_time = vprint_time(current_time, 'Created dfAll from datasets...')
-
-		dfAllFase1 = get_dfAllFase1_from_datasets(dfAll)
-		print("dfAllFase1.shape: ", dfAllFase1.shape)
-		current_time = vprint_time(current_time, 'Created dfAllFase1 from datasets...')
-
-		dfInfoEscolas = get_dfInfoEscolas_from_datasets(dfAllFase1)
-		print("dfInfoEscolas.shape: ", dfInfoEscolas.shape)
-		current_time = vprint_time(current_time, 'Created dfInfoEscolas from datasets...')
-
-	else:
-		# Because parquet extra files already exist, just load them from disk
-
-		print("Loading Extra parquet files from disk")
-
-		dfAll = get_dfAll_from_Parquet()
-
-		current_time = vprint_time(current_time, 'Created dfAll from Parquet...')
-		dfAllFase1 = get_dfAllFase1_from_Parquet()
-		print("dfAllFase1.shape: ", dfAllFase1.shape)
-
-		current_time = vprint_time(current_time, 'Created dfAllFase1 from Parquet...')
-		dfAllFase1 = get_dfAllFase1_from_Parquet()
-		print("dfAllFase1.shape: ", dfAllFase1.shape)
+		#parquetPath = dicParams['dataFolderParquet']
+		if createParquetBase == True:
+			# If we created the parquet base files, we need to create the parquet extra files
+			createParquetExtra = True
+		else:
+			createParquetExtra = False
+			for key in dicParquetExtra:
+				file = parquetPath + dicParquetExtra[key] + ".parquet.gzip"
+				if not exists(file):
+					print("Parquet extra file does not exist; creating it: " + file)
+					print("Creating all Parquet extra files from existing parquet files")
+					createParquetExtra = True
+					break
 		
-		current_time = vprint_time(current_time, 'Created dfAllFase1 from Parquet...')
-		dfInfoEsclas = get_dfInfoEscolas_from_Parquet()
-		print("dfInfoEsclas.shape: ", dfInfoEsclas.shape)
-		current_time = vprint_time(current_time, 'Created dfInfoEsclas from Parquet...')
+		if createParquetExtra == True:
+
+			print("Creating Extra parquet files from dataframes")
+
+			dfAll = get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, dfSitFreq)
+			print("dfAll.shape: ", dfAll.shape)
+			current_time = vprint_time(current_time, 'Created dfAll from datasets...')
+
+			dfAllFase1 = get_dfAllFase1_from_datasets(dfAll)
+			print("dfAllFase1.shape: ", dfAllFase1.shape)
+			current_time = vprint_time(current_time, 'Created dfAllFase1 from datasets...')
+
+			dfInfoEscolas = get_dfInfoEscolas_from_datasets(dfAllFase1)
+			print("dfInfoEscolas.shape: ", dfInfoEscolas.shape)
+			current_time = vprint_time(current_time, 'Created dfInfoEscolas from datasets...')
+
+		else:
+			# Because parquet extra files already exist, just load them from disk
+
+			print("Loading Extra parquet files from disk")
+
+			dfAll = get_dfAll_from_Parquet()
+
+			current_time = vprint_time(current_time, 'Created dfAll from Parquet...')
+			dfAllFase1 = get_dfAllFase1_from_Parquet()
+			print("dfAllFase1.shape: ", dfAllFase1.shape)
+
+			current_time = vprint_time(current_time, 'Created dfAllFase1 from Parquet...')
+			dfAllFase1 = get_dfAllFase1_from_Parquet()
+			print("dfAllFase1.shape: ", dfAllFase1.shape)
+			
+			current_time = vprint_time(current_time, 'Created dfAllFase1 from Parquet...')
+			dfInfoEsclas = get_dfInfoEscolas_from_Parquet()
+			print("dfInfoEsclas.shape: ", dfInfoEsclas.shape)
+			current_time = vprint_time(current_time, 'Created dfInfoEsclas from Parquet...')
 
 
 

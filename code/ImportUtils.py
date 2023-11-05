@@ -70,19 +70,28 @@ def mdbConnect( year=None, mdbfile=None):
 	connection = pyodbc.connect(connection_string)
 	return connection
 
-def get_sql_with_fallback( connect, SQLcmds = []):
+def read_sql_with_fallback( year, SQLcmds = []):
 	success = False
+	print(">>>>>>>>>>>>>>>>>>>")
+	print("Parameters to read_sql_with_fallback: connect = *{}*, SQLcmds = *{}*".format( year, SQLcmds))
+	print("SQLCmds length:", len(SQLcmds))
+	if type(SQLcmds) == str:
+		SQLcmds = [SQLcmds]
+		print("SQLCmds length:", len(SQLcmds))
 	while len(SQLcmds) > 0 and not success:
 		SQLcommand = SQLcmds.pop( 0)
 		print("SQLcommand: ", SQLcommand, ", list size", len(SQLcmds), ", SQLcmds: ", SQLcmds, ", success", success)
 		try:
-			df = pd.read_sql(SQLcommand, connect)
+			print("trying to execute SQL command: ", SQLcommand)
+			df = pd.read_sql(SQLcommand, mdbConnect(year))
+			print("Succeeded")
 			success = True
 		except Exception as e:
 			print(f"An exception occurred: {e}; Moving on!!")
 	if not success:
 		print("All strings failed!")
 		raise Exception("All strings failed!")
+
 	return df
 
 
@@ -182,19 +191,20 @@ def get_dfGeo_from_MDB():
 	'''
 	from main import dicParams, dicNuts2
 
-	# Distrito+Concelho+Nuts3
-
 	# Nuts3 description is in the 2018 database; the other attributes are obtained from the 2021 database
-	#dfLocation = pd.DataFrame( {'Distrito':[], 'DescrDistrito':[], 'Concelho': [], 'DescrConcelho': [], 'Nuts3': [], 'Nuts3Descr': []})
 
 	# Get Nuts3 names from 2018 database
 	# Establish a connection to the database
 
-	connection = mdbConnect(year=dicParams["geoNuts3infoYear"])
+	### connection = mdbConnect(year=dicParams["geoNuts3infoYear"])
 
 	# Execute SQL query
 	SQL = 'SELECT Nuts3, Descr as DescrNuts3 FROM tblNuts3;'
-	dfNuts3 = pd.read_sql(SQL, connection)
+
+	dfNuts3 = read_sql_with_fallback( dicParams["geoNuts3infoYear"], SQLcmds = SQL)
+
+
+	### dfNuts3 = pd.read_sql(SQL, connection)
 
 	#Define Nuts2 as the first two characters in Nuts3
 	dfNuts3["Nuts2"] = dfNuts3["Nuts3"].str[0:2]
@@ -216,15 +226,17 @@ def get_dfGeo_from_MDB():
 	dfNuts3["DescrNuts2"] = dfNuts3["Nuts2"].map(dicNuts2)
 
 	# Establish a connection to the database
-	connection = mdbConnect(year=dicParams["geoInfoYear"])
+	###connection = mdbConnect(year=dicParams["geoInfoYear"])
 
 	# Execute SQL query
 	SQL = 'SELECT conc.Distrito, distr.Descr as DescrDistrito, conc.Concelho, conc.Descr as DescrConcelho, conc.Nuts3 FROM tblCodsConcelho conc inner join tblCodsDistrito distr on conc.distrito = distr.distrito;'
 
-	dfGeo = pd.read_sql(SQL, connection)
+	###dfGeo = pd.read_sql(SQL, connection)
+
+	dfGeo = read_sql_with_fallback( dicParams["geoInfoYear"], SQLcmds = SQL)
 
 	# Close the cursor and connection
-	connection.close()
+	### connection.close()
 
 	dfGeo = dfGeo.merge(dfNuts3, on="Nuts3", how="left")
 
@@ -292,7 +304,7 @@ def get_dfSchools_from_MDB():
 		
 		try:
 
-			
+
 			# Establish a connection to the database
 			connection = mdbConnect(year=ano)
 
