@@ -50,6 +50,27 @@ def extract_MDBs():
 
 # endregion download zips and extract MDBs
 
+
+def mdbConnect( year=None, mdbfile=None):
+	'''
+	year: year of the database to connect to
+	mdbfile: full path to the mdb file to connect to
+	'''
+	from main import dicParams
+	if mdbfile is None and year is None:
+		raise Exception("mdbConnect: Either year or mdbfile must be provided")
+	if mdbfile is None:
+		mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(year) + '.mdb'
+	else:
+		if mdbfile[-4:] != ".mdb":
+			mdbfile = mdbfile + ".mdb"
+		if mdbfile[0] != "/" & mdbfile[1] != ":":
+			mdbfile = dicParams['dataFolderMDB'] + mdbfile
+	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
+	connection = pyodbc.connect(connection_string)
+	return connection
+
+
 # region Parquet Imports
 
 def get_dfGeo_from_Parquet():
@@ -142,7 +163,8 @@ def get_dfGeo_from_MDB():
 	'''
 	Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from MDB files.
 	'''
-	from main import dicParams, dicFiles
+	from main import dicParams, dicNuts2
+
 	# Distrito+Concelho+Nuts3
 
 	# Nuts3 description is in the 2018 database; the other attributes are obtained from the 2021 database
@@ -150,10 +172,8 @@ def get_dfGeo_from_MDB():
 
 	# Get Nuts3 names from 2018 database
 	# Establish a connection to the database
-	# mdbfile = dicParams['dataFolderMDB'] +  'ENES2018.mdb'
-	# connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-	# connection = pyodbc.connect(connection_string)
-	connection = mdbConnect(year=2018)
+
+	connection = mdbConnect(year=dicParams["geoNuts3infoYear"])
 
 	# Execute SQL query
 	SQL = 'SELECT Nuts3, Descr as DescrNuts3 FROM tblNuts3;'
@@ -165,23 +185,21 @@ def get_dfGeo_from_MDB():
 	# print(dfNuts3)
 	
 	# Define dictionary for Nuts2 description
-	dicNuts2 = {}
-	dicNuts2["11"] = "Norte"
-	dicNuts2["15"] = "Algarve"
-	dicNuts2["16"] = "Centro"
-	dicNuts2["17"] = "AM Lisboa"
-	dicNuts2["18"] = "Alentejo"
-	dicNuts2["20"] = "RA Açores"
-	dicNuts2["30"] = "RA Madeira"
-	dicNuts2["90"] = "Estrangeiro"
+	# dicNuts2 = {}
+	# dicNuts2["11"] = "Norte"
+	# dicNuts2["15"] = "Algarve"
+	# dicNuts2["16"] = "Centro"
+	# dicNuts2["17"] = "AM Lisboa"
+	# dicNuts2["18"] = "Alentejo"
+	# dicNuts2["20"] = "RA Açores"
+	# dicNuts2["30"] = "RA Madeira"
+	# dicNuts2["90"] = "Estrangeiro"
 
 	# Add Nuts2 description to the dataframe
 	dfNuts3["DescrNuts2"] = dfNuts3["Nuts2"].map(dicNuts2)
 
 	# Establish a connection to the database
-	mdbfile = dicParams['dataFolderMDB'] +  'ENES2021.mdb'
-	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-	connection = pyodbc.connect(connection_string)
+	connection = mdbConnect(year=dicParams["geoInfoYear"])
 
 	# Execute SQL query
 	SQL = 'SELECT conc.Distrito, distr.Descr as DescrDistrito, conc.Concelho, conc.Descr as DescrConcelho, conc.Nuts3 FROM tblCodsConcelho conc inner join tblCodsDistrito distr on conc.distrito = distr.distrito;'
@@ -202,26 +220,6 @@ def get_dfGeo_from_MDB():
 
 
 
-def mdbConnect( year=None, mdbfile=None):
-	'''
-	year: year of the database to connect to
-	mdbfile: full path to the mdb file to connect to
-	'''
-	from main import dicParams
-	if mdbfile is None and year is None:
-		raise Exception("mdbConnect: Either year or mdbfile must be provided")
-	if mdbfile is None:
-		mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(year) + '.mdb'
-	else:
-		if mdbfile[-4:] != ".mdb":
-			mdbfile = mdbfile + ".mdb"
-		if mdbfile[0] != "/":
-			mdbfile = dicParams['dataFolderMDB'] + mdbfile
-	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-	connection = pyodbc.connect(connection_string)
-	return connection
-
-
 def get_dfSitFreq_from_MDB():
 	'''
 	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from MDB files.
@@ -232,9 +230,7 @@ def get_dfSitFreq_from_MDB():
 	# LOAD SitFreq from 2018
 
 	# Establish a connection to the database
-	mdbfile = dicParams['dataFolderMDB'] +  'ENES2018.mdb'
-	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-	connection = pyodbc.connect(connection_string)
+	connection = mdbConnect(year=dicParams["sitFreqInfoYear"])
 
 	# Execute SQL query
 	#SQL = "SELECT SitFreq, Descr as SitFreqDescr, Defin as SitFreqDefin FROM tblCodsSitFreq union 'NA', 'Não indicado', 'Não indicado';"
@@ -259,14 +255,13 @@ def get_dfSchools_from_MDB():
 
 	# LOAD 2022
 
-	ano = 2022
+	ano = dicParams['lastYear']
 	# Establish a connection to the database
-	mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(ano) + '.mdb'
-	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-	connection = pyodbc.connect(connection_string)
+	connection = mdbConnect(year=2018)
+
 
 	# Execute SQL query
-	SQL = "SELECT 2022 as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
+	SQL = "SELECT ' + str(ano) + ' as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
 	dfSchools = pd.read_sql(SQL, connection)
 
 	# Close the connection
@@ -276,27 +271,26 @@ def get_dfSchools_from_MDB():
 	# Now loop throught the previous years, in descending order, to get schools that no longer exist
 	paramFirstYear = dicParams['firstYear']
 	paramLastYear = dicParams['lastYear']
-	for ano in range( 2022-1, 2008-1, -1):
+	for ano in range( paramLastYear-1, paramFirstYear-1, -1):
 		
 		try:
 			# Establish a connection to the database
-			mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(ano) + '.mdb'
-			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-			connection = pyodbc.connect(connection_string)
-
-						# Establish a connection to the database
-			mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(ano) + '.mdb'
-			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
 			connection = mdbConnect(year=ano)
 
-
-			# Execute SQL query
-			if ano >= 2015:
+			try:
+				vprint("Trying to get data from tblEscolas with CodDGEEC, year" + str(ano) + "...")
+				# Execute SQL query
 				SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, CodDGEEC FROM tblEscolas;"
-			else:
+				dfUpdates = pd.read_sql(SQL, connection)
+			except:
+				vprint("Failed; trying to get data from tblEscolas and forge CodDGEEC, year" + str(ano) + "...")
+				# Execute SQL query
 				SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, int( distrito * 100000 + concelho * 1000 + 999) as CodDGEEC FROM tblEscolas;"
-			
-			dfUpdates = pd.read_sql(SQL, connection)
+				dfUpdates = pd.read_sql(SQL, connection)
+				vprint("Finished Exception code.")
+
+			vprint("Outsite excetion handling, year" + str(ano) + "...")
+
 
 			# Identify rows in dfUpdates that don't exist in dfSchools
 			#mask = ~dfUpdates[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1).isin(dfSchools[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1))
@@ -338,9 +332,7 @@ def get_dfCursos_from_MDB():
 	for ano in range(2022, 2008-1, -1):
 		try:
 			# Establish a connection to the database
-			mdbfile = dicParams['dataFolderMDB'] +  'ENES'+str(ano)+'.mdb'
-			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-			connection = pyodbc.connect(connection_string)
+			connection = mdbConnect(year=ano)
 
 			# Execute SQL query
 			SQL = "Select " + str(ano) + " as ano, curso.Curso, curso.TpCurso as TipoCurso, curso.SubTipo as SubtipoCurso, curso.Descr as DescrCurso,"\
@@ -376,10 +368,7 @@ def get_dfExames_from_MDB():
 
 	for ano in range(2022, 2008-1, -1):
 		try:
-			# Establish a connection to the database
-			mdbfile = dicParams['dataFolderMDB'] +  'ENES'+str(ano)+'.mdb'
-			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-			connection = pyodbc.connect(connection_string)
+			connection = mdbConnect(year=ano)
 
 			# Execute SQL query
 			if ano > 2014:
@@ -428,9 +417,7 @@ def get_dfResultados_from_MDB():
 	for ano in range(2022, 2008-1, -1):
 		try:
 			# Establish a connection to the database
-			mdbfile = dicParams['dataFolderMDB'] +  'ENES'+str(ano)+'.mdb'
-			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-			connection = pyodbc.connect(connection_string)
+			connection = mdbConnect(year=ano)
 
 			# Execute SQL query
 			if ano > 2015:
@@ -439,6 +426,8 @@ def get_dfResultados_from_MDB():
 				SQL = "Select " + str(ano) + " as ano, *, '?' as ParaCFCEPE from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
 
 			dfResultadosAno = pd.read_sql(SQL, connection)
+
+
 			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
 			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
 			dfResultadosAno['Class_Exam_Rounded'] = (dfResultadosAno['Class_Exam'] + 0.001).round().astype(int)

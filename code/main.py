@@ -50,6 +50,7 @@ dicFiles = dataParams['dicFiles']
 dicParquetBase = dataParams['dicParquetBase']
 dicParquetExtra = dataParams['dicParquetExtra']
 dicParams = dataParams['dicParams']
+dicNuts2 = dataParams['dicNuts2']
 
 
 if dicParams["ignore_known_warnings"] == True:
