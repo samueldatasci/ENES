@@ -103,7 +103,6 @@ def get_dfResultados_from_Parquet():
 
 	return dfResultados
 
-
 def get_dfAll_from_Parquet():
 	'''Return dataframe with all data joined, from parquet files.'''
 	from main import dicParams, dicFiles
@@ -439,6 +438,7 @@ def get_dfResultados_from_MDB():
 			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
 			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
 			dfResultadosAno['Class_Exam_Rounded'] = (dfResultadosAno['Class_Exam'] + 0.001).round().astype(int)
+			dfResultadosAno['Class_Exam_Roundup'] = (dfResultadosAno['Class_Exam'] + 0.49).round().astype(int)
 			dfResultadosAno = dfResultadosAno.dropna(subset=['Class_Exam'])
 
 			#use a lambda function to define new column "Covid" with value "Before" if ano < 2020, else "After"
@@ -498,11 +498,53 @@ def get_dfAllFase1_from_datasets(dfAll):
 def get_dfInfoEscolas_from_datasets(dfAllFase1):
 	from main import dicParams, dicFiles
 
+	myclock1= vprint_time(prefix = "dfInfoEscolas - Applying the several filters on dfAllFase1. ")
+	myclock=myclock1
 	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
 	dfInfoEscolas = dfAllFase1[ (dfAllFase1["TemInterno"] == "S") & (dfAllFase1["SubtipoCurso"].isin(["N01", "N04"])) & (dfAllFase1["Fase"] == "1") & (dfAllFase1["ParaAprov"] == "S") & (dfAllFase1["Interno"] == "S") & (dfAllFase1["Class_Exam"] > 9.4)]
 	
+	# Class_Exam_Rounded
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating median, mean CIF for each ano, Exame, Class_Exam_Rounded. ", start_time=myclock)
+	dfStats = dfInfoEscolas.groupby(['ano', "Exame", 'Class_Exam_Rounded']).agg(['median', 'mean', 'count'])['CIF'].rename(columns={'median': 'ExamRounded_median_CIF', 'mean': 'ExamRounded_mean_CIF', 'count': 'ExamRounded_count_CIF'})
+	myclock= vprint_time(prefix = "dfInfoEscolas - Merging results for mean, median CIF by ano, Exame, Class_Exam_Rounded. ", start_time=myclock)
+	dfInfoEscolas = dfInfoEscolas.merge(dfStats, left_on=['ano', "Exame", 'Class_Exam_Rounded'], right_on=['ano', "Exame", 'Class_Exam_Rounded'], how='left')
+
+	# Class_Exam_Roundup
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating median, mean CIF for each ano, Exame, Class_Exam_RoundUp. ", start_time=myclock)
+	dfStats = dfInfoEscolas.groupby(['ano', "Exame", 'Class_Exam_RoundUp']).agg(['median', 'mean', 'count'])['CIF'].rename(columns={'median': 'ExamRoundUp_median_CIF', 'mean': 'ExamRoundUp_mean_CIF', 'count': 'ExamRoundUp_count_CIF'})
+	myclock= vprint_time(prefix = "dfInfoEscolas - Merging results for mean, median CIF by ano, Exame, Class_Exam_RoundUp. ", start_time=myclock)
+	dfInfoEscolas = dfInfoEscolas.merge(dfStats, left_on=['ano', "Exame", 'Class_Exam_RoundUp'], right_on=['ano', "Exame", 'Class_Exam_RoundUp'], how='left')
+
+	# Bonus is the actual grade (CIF) minus the expected grade
+	# Positive if actual CIF was above expected; negative if it was below expected
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_median_ExamRounded. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_median_ExamRounded"] = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRounded_median_CIF"]
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_mean_ExamRounded. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_mean_ExamRounded"]   = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRounded_mean_CIF"]
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_median_ExamRoundUp. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRoundUp_median_CIF"]
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_mean_ExamRoundUp. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"]   = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRoundUp_mean_CIF"]
+
+	# Adjusted Bonus is the same, but we compensate for the rounding done in Class_Exam_Rounded or Class_Exam_RoundUp
+	# If we rounded up, we compensate by subtracting that, and vice-versa
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_median_ExamRounded. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_adj_median_ExamRounded"] = dfInfoEscolas["CIF_bonus_median_ExamRounded"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_Rounded"]
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_mean_ExamRounded. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_adj_mean_ExamRounded"]   = dfInfoEscolas["CIF_bonus_mean_ExamRounded"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_Rounded"]
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_median_ExamRoundUp. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_adj_median_ExamRoundUp"] = dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
+	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_mean_ExamRoundUp. ", start_time=myclock)
+	dfInfoEscolas["CIF_bonus_adj_mean_ExamRoundUp"]   = dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
+
+
+	myclock= vprint_time(prefix = "dfInfoEscolas - Saving Parquet. ", start_time=myclock)
 	parquetPath = dicParams['dataFolderParquet']
 	dfInfoEscolas.to_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip', compression='gzip')
+
+	myclock= vprint_time(prefix = "dfInfoEscolas - DONE!!! ", start_time=myclock)
+
+	vprint_time(prefix = "dfInfoEscolas - OVERALL DURATION: ", start_time=myclock1)
 
 	return( dfInfoEscolas)
 # endregion
@@ -515,12 +557,12 @@ def vprint(*args, **kwargs):
 		print(*args, **kwargs)
 
 # print current time and elapsed time since last execution
-def vprint_time(start_time = 0, prefix = ''):
+def vprint_time(prefix = '', start_time = 0):
 	current_time = time.time()
 	if start_time == 0:
-		vprint(prefix + 'Current time: ' + str(datetime.datetime.now()))
+		vprint(prefix + ' Current time: ' + str(datetime.datetime.now()))
 	else:
 		elapsed_time = current_time - start_time
-		vprint(prefix + 'Current time: ' + str(datetime.datetime.now()) + '; Elapsed time: ' + str(datetime.timedelta(seconds=elapsed_time)))
+		vprint(prefix + ' Current time: ' + str(datetime.datetime.now()) + '; Elapsed time: ' + str(datetime.timedelta(seconds=elapsed_time)))
 	return current_time
 # endregion
