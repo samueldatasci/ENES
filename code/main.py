@@ -229,5 +229,7 @@ def it():
 
 
 if __name__ == '__main__':
+	myclk = vprint_time( start_time= 0, prefix= '>>> Starting...')
 	it()
+	myclk = vprint_time(start_time=myclk, prefix='>>> Finished...')
 	

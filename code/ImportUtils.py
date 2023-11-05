@@ -20,9 +20,12 @@ import wget
 #from sqlalchemy import create_engine
 import traceback
 
+#from main import dicParams
+
 #endregion
 
 
+# region download zips and extract MDBs
 def download_zip_files():
 	# download files in dicFiles from the Internet
 	from main import dicParams, dicFiles
@@ -45,6 +48,7 @@ def extract_MDBs():
 			print("Rename {} to {}".format(dicParams['dataFolderMDB'] +filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb"))
 			rename(dicParams['dataFolderMDB'] + filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb")
 
+# endregion download zips and extract MDBs
 
 # region Parquet Imports
 
@@ -125,37 +129,6 @@ def get_dfInfoEscolas_from_Parquet():
 	'''Return dataframe with all data joined, in the conditions considered by Infoescolas, note 6.'''
 	from main import dicParams, dicFiles
 
-
-	vprint("## Valor esperado ##")
-	vprint("https://infoescolas.medu.pt/secundario/NI09.pdf")
-
-	vprint("Ponto 2.6")
-	vprint("No cálculo do indicador do alinhamento apenas são consideradas:")
-	vprint('a) as notas internas dos alunos da escola, # df["TemInterno"] == "S"')
-	vprint('b) matriculados em cursos Científico-Humanísticos, # df["SubtipoCurso"].isin(["N01"])')
-	vprint('c) que realizaram exames nacionais na 1a fase, # df["Fase"] == "1"')
-	vprint('d) para aprovação, # df["ParaAprov"] == "S"')
-	vprint('e) como alunos internos. # df["Interno"] == "S"')
-	vprint('f) Além disso, apenas são consideradas as notas internas das disciplinas em que o aluno obteve uma classificação superior ou igual a 9,5 valores no respetivo exame nacional # df["Class_Exam"] == "S"')
-
-	vprint('##### NOTE1:')
-	vprint('It could make sense to also just include dfAllFase1["CIF"] > 9')
-	vprint('However, this is automatically the case, because students with internal grade <= 9 take the exame as external students')
-	vprint('By adding this filter, the number of observations remains unchanged.')
-
-	vprint('##### NOTE2:')
-	vprint('We could consider other SubtipoCurso, such as N04 (same as N01, but for "Ensino Recorrente")')
-
-	vprint('##### _List of values/description for curso subtipo N_')
-	vprint('SubTipo Descr')
-	vprint('N01 Cursos Científico-Humanísticos')
-	vprint('N02	Cursos Artísticos Especializados')
-	vprint('N03	Cursos Tecnológicos')
-	vprint('N04	Cursos Científico-Humanísticos do Ensino Recorrente')
-	vprint('N05	Cursos Tecnológicos do Ensino Recorrente')
-	vprint('N06	Cursos Artísticos Especializados do Ensino Recorrente')
-	vprint('N07	Cursos Profissionais')
-
 	parquetPath = dicParams['dataFolderParquet']
 	dfInfoEscolas = pd.read_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip')
 
@@ -177,9 +150,10 @@ def get_dfGeo_from_MDB():
 
 	# Get Nuts3 names from 2018 database
 	# Establish a connection to the database
-	mdbfile = dicParams['dataFolderMDB'] +  'ENES2018.mdb'
-	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
-	connection = pyodbc.connect(connection_string)
+	# mdbfile = dicParams['dataFolderMDB'] +  'ENES2018.mdb'
+	# connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
+	# connection = pyodbc.connect(connection_string)
+	connection = mdbConnect(year=2018)
 
 	# Execute SQL query
 	SQL = 'SELECT Nuts3, Descr as DescrNuts3 FROM tblNuts3;'
@@ -225,6 +199,28 @@ def get_dfGeo_from_MDB():
 	dfGeo.to_parquet(parquetPath + 'dfGeo.parquet.gzip', compression='gzip')  
 
 	return dfGeo
+
+
+
+def mdbConnect( year=None, mdbfile=None):
+	'''
+	year: year of the database to connect to
+	mdbfile: full path to the mdb file to connect to
+	'''
+	from main import dicParams
+	if mdbfile is None and year is None:
+		raise Exception("mdbConnect: Either year or mdbfile must be provided")
+	if mdbfile is None:
+		mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(year) + '.mdb'
+	else:
+		if mdbfile[-4:] != ".mdb":
+			mdbfile = mdbfile + ".mdb"
+		if mdbfile[0] != "/":
+			mdbfile = dicParams['dataFolderMDB'] + mdbfile
+	connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
+	connection = pyodbc.connect(connection_string)
+	return connection
+
 
 def get_dfSitFreq_from_MDB():
 	'''
@@ -278,6 +274,8 @@ def get_dfSchools_from_MDB():
 	print("Year {} - adding {} schools to the dataframe.".format( ano, dfSchools.shape[0]))
 
 	# Now loop throught the previous years, in descending order, to get schools that no longer exist
+	paramFirstYear = dicParams['firstYear']
+	paramLastYear = dicParams['lastYear']
 	for ano in range( 2022-1, 2008-1, -1):
 		
 		try:
@@ -285,6 +283,12 @@ def get_dfSchools_from_MDB():
 			mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(ano) + '.mdb'
 			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
 			connection = pyodbc.connect(connection_string)
+
+						# Establish a connection to the database
+			mdbfile = dicParams['dataFolderMDB'] +  'ENES' + str(ano) + '.mdb'
+			connection_string = 'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + mdbfile
+			connection = mdbConnect(year=ano)
+
 
 			# Execute SQL query
 			if ano >= 2015:
@@ -498,53 +502,37 @@ def get_dfAllFase1_from_datasets(dfAll):
 def get_dfInfoEscolas_from_datasets(dfAllFase1):
 	from main import dicParams, dicFiles
 
-	myclock1= vprint_time(prefix = "dfInfoEscolas - Applying the several filters on dfAllFase1. ")
-	myclock=myclock1
+	myclock= vprint_time(prefix = "dfInfoEscolas - Applying ""InfoEscolas"" on dfAllFase1 filters and calculating group statistcs.")
 	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
 	dfInfoEscolas = dfAllFase1[ (dfAllFase1["TemInterno"] == "S") & (dfAllFase1["SubtipoCurso"].isin(["N01", "N04"])) & (dfAllFase1["Fase"] == "1") & (dfAllFase1["ParaAprov"] == "S") & (dfAllFase1["Interno"] == "S") & (dfAllFase1["Class_Exam"] > 9.4)]
 	
 	# Class_Exam_Rounded
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating median, mean CIF for each ano, Exame, Class_Exam_Rounded. ", start_time=myclock)
 	dfStats = dfInfoEscolas.groupby(['ano', "Exame", 'Class_Exam_Rounded']).agg(['median', 'mean', 'count'])['CIF'].rename(columns={'median': 'ExamRounded_median_CIF', 'mean': 'ExamRounded_mean_CIF', 'count': 'ExamRounded_count_CIF'})
-	myclock= vprint_time(prefix = "dfInfoEscolas - Merging results for mean, median CIF by ano, Exame, Class_Exam_Rounded. ", start_time=myclock)
 	dfInfoEscolas = dfInfoEscolas.merge(dfStats, left_on=['ano', "Exame", 'Class_Exam_Rounded'], right_on=['ano', "Exame", 'Class_Exam_Rounded'], how='left')
 
 	# Class_Exam_Roundup
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating median, mean CIF for each ano, Exame, Class_Exam_RoundUp. ", start_time=myclock)
 	dfStats = dfInfoEscolas.groupby(['ano', "Exame", 'Class_Exam_RoundUp']).agg(['median', 'mean', 'count'])['CIF'].rename(columns={'median': 'ExamRoundUp_median_CIF', 'mean': 'ExamRoundUp_mean_CIF', 'count': 'ExamRoundUp_count_CIF'})
-	myclock= vprint_time(prefix = "dfInfoEscolas - Merging results for mean, median CIF by ano, Exame, Class_Exam_RoundUp. ", start_time=myclock)
 	dfInfoEscolas = dfInfoEscolas.merge(dfStats, left_on=['ano', "Exame", 'Class_Exam_RoundUp'], right_on=['ano', "Exame", 'Class_Exam_RoundUp'], how='left')
 
 	# Bonus is the actual grade (CIF) minus the expected grade
 	# Positive if actual CIF was above expected; negative if it was below expected
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_median_ExamRounded. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_median_ExamRounded"] = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRounded_median_CIF"]
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_mean_ExamRounded. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_mean_ExamRounded"]   = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRounded_mean_CIF"]
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_median_ExamRoundUp. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRoundUp_median_CIF"]
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_mean_ExamRoundUp. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"]   = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRoundUp_mean_CIF"]
 
 	# Adjusted Bonus is the same, but we compensate for the rounding done in Class_Exam_Rounded or Class_Exam_RoundUp
 	# If we rounded up, we compensate by subtracting that, and vice-versa
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_median_ExamRounded. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_adj_median_ExamRounded"] = dfInfoEscolas["CIF_bonus_median_ExamRounded"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_Rounded"]
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_mean_ExamRounded. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_adj_mean_ExamRounded"]   = dfInfoEscolas["CIF_bonus_mean_ExamRounded"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_Rounded"]
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_median_ExamRoundUp. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_adj_median_ExamRoundUp"] = dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
-	myclock= vprint_time(prefix = "dfInfoEscolas - Calculating CIF_bonus_adj_mean_ExamRoundUp. ", start_time=myclock)
 	dfInfoEscolas["CIF_bonus_adj_mean_ExamRoundUp"]   = dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
 
 
-	myclock= vprint_time(prefix = "dfInfoEscolas - Saving Parquet. ", start_time=myclock)
 	parquetPath = dicParams['dataFolderParquet']
 	dfInfoEscolas.to_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip', compression='gzip')
 
-	myclock= vprint_time(prefix = "dfInfoEscolas - DONE!!! ", start_time=myclock)
-
-	vprint_time(prefix = "dfInfoEscolas - OVERALL DURATION: ", start_time=myclock1)
+	myclock= vprint_time(prefix = "dfInfoEscolas - created and save to parquet! ", start_time=myclock)
 
 	return( dfInfoEscolas)
 # endregion
