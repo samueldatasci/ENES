@@ -70,6 +70,23 @@ def mdbConnect( year=None, mdbfile=None):
 	connection = pyodbc.connect(connection_string)
 	return connection
 
+def get_sql_with_fallback( connect, SQLcmds = []):
+	success = False
+	while len(SQLcmds) > 0 and not success:
+		SQLcommand = SQLcmds.pop( 0)
+		print("SQLcommand: ", SQLcommand, ", list size", len(SQLcmds), ", SQLcmds: ", SQLcmds, ", success", success)
+		try:
+			df = pd.read_sql(SQLcommand, connect)
+			success = True
+		except Exception as e:
+			print(f"An exception occurred: {e}; Moving on!!")
+	if not success:
+		print("All strings failed!")
+		raise Exception("All strings failed!")
+	return df
+
+
+
 
 # region Parquet Imports
 
@@ -261,7 +278,7 @@ def get_dfSchools_from_MDB():
 
 
 	# Execute SQL query
-	SQL = "SELECT ' + str(ano) + ' as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
+	SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
 	dfSchools = pd.read_sql(SQL, connection)
 
 	# Close the connection
@@ -274,20 +291,21 @@ def get_dfSchools_from_MDB():
 	for ano in range( paramLastYear-1, paramFirstYear-1, -1):
 		
 		try:
+
+			
 			# Establish a connection to the database
 			connection = mdbConnect(year=ano)
 
 			try:
-				vprint("Trying to get data from tblEscolas with CodDGEEC, year" + str(ano) + "...")
 				# Execute SQL query
 				SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, CodDGEEC FROM tblEscolas;"
+				vprint(SQL)
 				dfUpdates = pd.read_sql(SQL, connection)
 			except:
-				vprint("Failed; trying to get data from tblEscolas and forge CodDGEEC, year" + str(ano) + "...")
 				# Execute SQL query
 				SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, int( distrito * 100000 + concelho * 1000 + 999) as CodDGEEC FROM tblEscolas;"
+				vprint(SQL)
 				dfUpdates = pd.read_sql(SQL, connection)
-				vprint("Finished Exception code.")
 
 			vprint("Outsite excetion handling, year" + str(ano) + "...")
 
@@ -317,6 +335,9 @@ def get_dfSchools_from_MDB():
 	dfSchools['CodDGEEC'] = dfSchools['CodDGEEC'].astype(str)
 
 	parquetPath = dicParams['dataFolderParquet']
+	print(dfSchools.shape)
+	print(dfSchools.head(3))
+
 	dfSchools.to_parquet(parquetPath + 'dfSchools.parquet.gzip', compression='gzip')  
 
 	return dfSchools
@@ -328,11 +349,13 @@ def get_dfCursos_from_MDB():
 
 	from main import dicParams, dicFiles
 	# Curso, tipo, subtipo
+	paramFirstYear = dicParams['firstYear']
+	paramLastYear = dicParams['lastYear']
 
-	for ano in range(2022, 2008-1, -1):
+	for ano in range(paramLastYear, paramFirstYear-1, -1):
 		try:
 			# Establish a connection to the database
-			connection = mdbConnect(year=ano)
+			#connection = mdbConnect(year=ano)
 
 			# Execute SQL query
 			SQL = "Select " + str(ano) + " as ano, curso.Curso, curso.TpCurso as TipoCurso, curso.SubTipo as SubtipoCurso, curso.Descr as DescrCurso,"\
@@ -340,7 +363,9 @@ def get_dfCursos_from_MDB():
 			"subtipos.Descr as DescrSubtipoCurso "\
 			"From ( tblCursos curso inner join tblCursosTipos tpcurso on curso.TpCurso = tpcurso.TpCurso ) inner join tblCursosSubTipos subtipos on curso.SubTipo = subtipos.SubTipo;"
 
-			dfCursosAno = pd.read_sql(SQL, connection)
+			#dfCursosAno = pd.read_sql(SQL, connection)
+			dfCursosAno = pd.read_sql(SQL, mdbConnect(year=ano))
+
 
 			print("Ano {} - cursos: {}".format(ano, dfCursosAno.shape[0]))
 
@@ -352,7 +377,7 @@ def get_dfCursos_from_MDB():
 			print("get_dfCursos_from_MDB, Ano {} - ERRO!".format(ano))
 
 	# Close the connection
-	connection.close()
+	#connection.close()
 
 	parquetPath = dicParams['dataFolderParquet']
 	dfCursos.to_parquet(parquetPath + 'dfCursos.parquet.gzip', compression='gzip')  
@@ -365,18 +390,28 @@ def get_dfExames_from_MDB():
 	'''
 	from main import dicParams, dicFiles
 	# Exames
+	paramFirstYear = dicParams['firstYear']
+	paramLastYear = dicParams['lastYear']
 
-	for ano in range(2022, 2008-1, -1):
+	for ano in range(paramLastYear, paramFirstYear-1, -1):
 		try:
-			connection = mdbConnect(year=ano)
+			#connection = mdbConnect(year=ano)
+
+			# # Execute SQL query
+			# if ano > 2014:
+			# 	SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, TipoExame from tblExames;"
+			# else:
+			# 	SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, '?' as TipoExame from tblExames;"
+			# dfExamesAno = pd.read_sql(SQL, connection)
 
 			# Execute SQL query
-			if ano > 2014:
+			try:
 				SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, TipoExame from tblExames;"
-			else:
+				dfExamesAno = pd.read_sql(SQL, mdbConnect(year=ano))
+			except:
 				SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, '?' as TipoExame from tblExames;"
-			
-			dfExamesAno = pd.read_sql(SQL, connection)
+				dfExamesAno = pd.read_sql(SQL, mdbConnect(year=ano))
+
 
 			if "dfExames" not in locals():
 				dfExames = dfExamesAno
@@ -397,7 +432,7 @@ def get_dfExames_from_MDB():
 
 
 	# Close the connection
-	connection.close()
+	#connection.close()
 
 	parquetPath = dicParams['dataFolderParquet']
 	dfExames.to_parquet(parquetPath + 'dfExames.parquet.gzip', compression='gzip')  

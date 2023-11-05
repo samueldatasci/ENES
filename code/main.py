@@ -57,9 +57,6 @@ if dicParams["ignore_known_warnings"] == True:
 	warnings.filterwarnings('ignore')
 
 
-
-
-
 def it():
 
 	print("Running...")

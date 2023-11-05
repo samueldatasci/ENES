@@ -1,3 +1,22 @@
+dicParams:
+  dataFolder: C:/ENES/
+  dataFolderMDB: C:/ENES/MDB/
+  dataFolderParquet: C:/ENES/Parquet/
+  dataFolderZIP: C:/ENES/ZIP/
+  ignore_known_warnings: true
+  verbose: true
+  firstYear: 2008
+  lastYear: 2022
+  
+  geoNuts3infoYear: 2018
+  geoInfoYear: 2021
+  sitFreqInfoYear: 2018
+
+# Parameters below this line don't need to be changed, unless you're a developer
+# This was only executed with files 2008-2022; for 2023 and beyond, the code will need to be updated
+
+
+# dicFiles stores the files to downlad. The value is the URL, the key is the filename to give to the downloaded file
 dicFiles:
   ENES2008.zip: https://www.dge.mec.pt/sites/default/files/JNE/enes2008_0.zip
   ENES2009.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2009.zip
@@ -14,13 +33,8 @@ dicFiles:
   ENES2020.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes_2020.zip
   ENES2021.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2021.zip
   ENES2022.zip: http://www.dge.mec.pt/sites/default/files/JNE/enes2022_bd_imprensa.zip
-dicParams:
-  dataFolder: C:/ENES/
-  dataFolderMDB: C:/ENES/MDB/
-  dataFolderParquet: C:/ENES/Parquet/
-  dataFolderZIP: C:/ENES/ZIP/
-  ignore_known_warnings: true
-  verbose: true
+
+# dicParquetBase are the files that are created directly fom the MDB
 dicParquetBase:
   0: dfCursos
   1: dfExames
@@ -28,12 +42,25 @@ dicParquetBase:
   3: dfGeo
   4: dfResultados
   5: dfSitFreq
+
+# dicParquetExtra are the files that are created from the files in dicParquetBase
 dicParquetExtra:
   0: dfAll
   1: dfAllFase1
   2: dfInfoEscolas
 
+# Names for Nuts2
+dicNuts2:
+  11: Norte
+  15: Algarve
+  16: Centro
+  17: AM Lisboa
+  18: Alentejo
+  20: RA Açores
+  30: RA Madeira
+  90: Estrangeiro
 
+# Files that are not used - this is for reference; these are 9th grade exams
 # ENEB2008.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2008-itens_1.zip
 # ENEB2009.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2009.zip
 # ENEB2010.zip: http://www.dge.mec.pt/sites/default/files/JNE/2010_eneb.zip

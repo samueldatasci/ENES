@@ -8,8 +8,8 @@ dicParams:
   firstYear: 2008
   lastYear: 2022
   
-  geoNuts3infoYear: 2021
-  geoInfoYear: 2018
+  geoNuts3infoYear: 2018
+  geoInfoYear: 2021
   sitFreqInfoYear: 2018
 
 # Parameters below this line don't need to be changed, unless you're a developer
