@@ -62,7 +62,7 @@ if dicParams["ignore_known_warnings"] == True:
 def it():
 
 	print("Running...")
-	current_time = vprint_time(0, 'Starting...')
+	current_time = vprint_time(start_time=0, prefix='Starting...')
 
 
 	parquetPath = dicParams['dataFolderParquet']

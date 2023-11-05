@@ -438,7 +438,7 @@ def get_dfResultados_from_MDB():
 			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
 			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
 			dfResultadosAno['Class_Exam_Rounded'] = (dfResultadosAno['Class_Exam'] + 0.001).round().astype(int)
-			dfResultadosAno['Class_Exam_Roundup'] = (dfResultadosAno['Class_Exam'] + 0.49).round().astype(int)
+			dfResultadosAno['Class_Exam_RoundUp'] = (dfResultadosAno['Class_Exam'] + 0.49).round().astype(int)
 			dfResultadosAno = dfResultadosAno.dropna(subset=['Class_Exam'])
 
 			#use a lambda function to define new column "Covid" with value "Before" if ano < 2020, else "After"
@@ -557,7 +557,7 @@ def vprint(*args, **kwargs):
 		print(*args, **kwargs)
 
 # print current time and elapsed time since last execution
-def vprint_time(prefix = '', start_time = 0):
+def vprint_time(start_time = 0, prefix = ''):
 	current_time = time.time()
 	if start_time == 0:
 		vprint(prefix + ' Current time: ' + str(datetime.datetime.now()))
