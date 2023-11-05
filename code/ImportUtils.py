@@ -17,10 +17,7 @@ from zipfile import ZipFile
 import requests
 import wget
 
-#from sqlalchemy import create_engine
 import traceback
-
-#from main import dicParams
 
 #endregion
 
@@ -47,14 +44,14 @@ def extract_MDBs():
 			zObject.extract( member=filename, path=dicParams['dataFolderMDB'])
 			print("Rename {} to {}".format(dicParams['dataFolderMDB'] +filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb"))
 			rename(dicParams['dataFolderMDB'] + filename, dicParams['dataFolderMDB'] + key[:-4] + ".mdb")
-
 # endregion download zips and extract MDBs
 
 
+# region database and file functions
 def mdbConnect( year=None, mdbfile=None):
 	'''
 	year: year of the database to connect to
-	mdbfile: full path to the mdb file to connect to
+	mdbfile: full or parcial path to the mdb file to connect to
 	'''
 	from main import dicParams
 	if mdbfile is None and year is None:
@@ -72,114 +69,71 @@ def mdbConnect( year=None, mdbfile=None):
 
 def read_sql_with_fallback( year, SQLcmds = []):
 	success = False
-	print(">>>>>>>>>>>>>>>>>>>")
-	print("Parameters to read_sql_with_fallback: connect = *{}*, SQLcmds = *{}*".format( year, SQLcmds))
-	print("SQLCmds length:", len(SQLcmds))
 	if type(SQLcmds) == str:
 		SQLcmds = [SQLcmds]
-		print("SQLCmds length:", len(SQLcmds))
 	while len(SQLcmds) > 0 and not success:
 		SQLcommand = SQLcmds.pop( 0)
-		print("SQLcommand: ", SQLcommand, ", list size", len(SQLcmds), ", SQLcmds: ", SQLcmds, ", success", success)
 		try:
-			print("trying to execute SQL command: ", SQLcommand)
 			df = pd.read_sql(SQLcommand, mdbConnect(year))
-			print("Succeeded")
+			vprint("Successfully executed: ", SQLcommand)
 			success = True
 		except Exception as e:
-			print(f"An exception occurred: {e}; Moving on!!")
+			vprint(f"--> Failed to execute. Exception: {e}")
 	if not success:
-		print("All strings failed!")
 		raise Exception("All strings failed!")
 
 	return df
 
+def read_parquet( filename):
+	from main import dicParams
+	parquetPath = dicParams['dataFolderParquet']
+	dfParquet = pd.read_parquet(dicParams['dataFolderParquet'] + filename + '.parquet.gzip')
+	vprint("Loaded Parquet file ", filename, "shape: ", dfParquet.shape)
+	return dfParquet
 
-
+def write_parquet( df, filename):
+	from main import dicParams
+	parquetPath = dicParams['dataFolderParquet']
+	df.to_parquet(parquetPath + filename + '.parquet.gzip', compression='gzip')
+	vprint("Saved Parquet file ", filename, ", shape: ", df.shape)
+# endregion database functions
 
 # region Parquet Imports
 
 def get_dfGeo_from_Parquet():
-	'''Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from parquet files.
-	'''
-	from main import dicParams, dicFiles
-	parquetPath = dicParams['dataFolderParquet']
-	dfGeo = pd.read_parquet(parquetPath + 'dfGeo.parquet.gzip')  
-	return dfGeo
+	'''Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from parquet files.'''
+	return read_parquet('dfGeo')
 
 def get_dfSitFreq_from_Parquet():
-	'''
-	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from parquet files.
-	'''
-	from main import dicParams, dicFiles
-	# SitFreq
-	parquetPath = dicParams['dataFolderParquet']
-	dfSitFreq = pd.read_parquet(parquetPath + 'dfSitFreq.parquet.gzip')  
-	return dfSitFreq
+	'''Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from parquet files.'''
+	return read_parquet('dfSitFreq')
 
 def get_dfSchools_from_Parquet():
-	'''Return dataframe with School information. Obtain data from parquet files.
-	'''
-	from main import dicParams, dicFiles
-	# Schools
-	parquetPath = dicParams['dataFolderParquet']
-	dfSchools = pd.read_parquet(parquetPath + 'dfSchools.parquet.gzip')  
-	return dfSchools
+	'''Return dataframe with School information. Obtain data from parquet files.'''
+	return read_parquet("dfSchools")
 
 def get_dfCursos_from_Parquet():
 	'''Return dataframe with Course information. Obtain data from parquet files.'''
-	from main import dicParams, dicFiles
-	# Curso, tipo, subtipo
-	parquetPath = dicParams['dataFolderParquet']
-	dfCursos = pd.read_parquet(parquetPath + 'dfCursos.parquet.gzip')  
-	return dfCursos
+	return read_parquet("dfCursos")
 
 def get_dfExames_from_Parquet():
 	'''Return dataframe with Exam information. Obtain data from parquet files.'''
-	from main import dicParams, dicFiles
-	# Exames
-	parquetPath = dicParams['dataFolderParquet']
-	dfExames = pd.read_parquet(parquetPath + 'dfExames.parquet.gzip')  
-	return dfExames
+	return read_parquet("dfExames")
 
 def get_dfResultados_from_Parquet():
 	'''Return dataframe with Exam Results information. Obtain data from parquet files.'''
-	from main import dicParams, dicFiles
-	# Resultados dos exames
-	parquetPath = dicParams['dataFolderParquet']
-	dfResultados = pd.read_parquet(parquetPath + 'dfResultados.parquet.gzip')
-	
-	# print record count by ano
-	#print(dfResultados.groupby('ano').count())
-
-	return dfResultados
+	return read_parquet("dfResultados")
 
 def get_dfAll_from_Parquet():
 	'''Return dataframe with all data joined, from parquet files.'''
-	from main import dicParams, dicFiles
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfAll = pd.read_parquet(parquetPath + 'dfAll.parquet.gzip')
-
-	return( dfAll)
+	return read_parquet('dfAll')
 
 def get_dfAllFase1_from_Parquet():
 	'''Return dataframe with all data joined, from parquet files, just for Phase 1 exams.'''
-	from main import dicParams, dicFiles
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfAllFase1 = pd.read_parquet(parquetPath + 'dfAllFase1.parquet.gzip')
-
-	return( dfAllFase1)
+	return read_parquet("dfAllFase1")
 
 def get_dfInfoEscolas_from_Parquet():
-	'''Return dataframe with all data joined, in the conditions considered by Infoescolas, note 6.'''
-	from main import dicParams, dicFiles
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfInfoEscolas = pd.read_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip')
-
-	return(dfInfoEscolas)
+	return read_parquet("dfInfoEscolas")
 
 #endregion
 
@@ -191,194 +145,98 @@ def get_dfGeo_from_MDB():
 	'''
 	from main import dicParams, dicNuts2
 
-	# Nuts3 description is in the 2018 database; the other attributes are obtained from the 2021 database
+	# Nuts3 description is in the 2018 database (defined as geoNuts3InfoYear); the other attributes are obtained from the 2021 database (defined as geoInfoYear)
 
-	# Get Nuts3 names from 2018 database
-	# Establish a connection to the database
-
-	### connection = mdbConnect(year=dicParams["geoNuts3infoYear"])
-
-	# Execute SQL query
 	SQL = 'SELECT Nuts3, Descr as DescrNuts3 FROM tblNuts3;'
-
 	dfNuts3 = read_sql_with_fallback( dicParams["geoNuts3infoYear"], SQLcmds = SQL)
-
-
-	### dfNuts3 = pd.read_sql(SQL, connection)
 
 	#Define Nuts2 as the first two characters in Nuts3
 	dfNuts3["Nuts2"] = dfNuts3["Nuts3"].str[0:2]
 
-	# print(dfNuts3)
-	
-	# Define dictionary for Nuts2 description
-	# dicNuts2 = {}
-	# dicNuts2["11"] = "Norte"
-	# dicNuts2["15"] = "Algarve"
-	# dicNuts2["16"] = "Centro"
-	# dicNuts2["17"] = "AM Lisboa"
-	# dicNuts2["18"] = "Alentejo"
-	# dicNuts2["20"] = "RA Açores"
-	# dicNuts2["30"] = "RA Madeira"
-	# dicNuts2["90"] = "Estrangeiro"
-
-	# Add Nuts2 description to the dataframe
+	# Add Nuts2 description to the dataframe, using the dicNuts2 dictionary in novaenes.yaml
 	dfNuts3["DescrNuts2"] = dfNuts3["Nuts2"].map(dicNuts2)
 
-	# Establish a connection to the database
-	###connection = mdbConnect(year=dicParams["geoInfoYear"])
-
-	# Execute SQL query
 	SQL = 'SELECT conc.Distrito, distr.Descr as DescrDistrito, conc.Concelho, conc.Descr as DescrConcelho, conc.Nuts3 FROM tblCodsConcelho conc inner join tblCodsDistrito distr on conc.distrito = distr.distrito;'
-
-	###dfGeo = pd.read_sql(SQL, connection)
-
 	dfGeo = read_sql_with_fallback( dicParams["geoInfoYear"], SQLcmds = SQL)
-
-	# Close the cursor and connection
-	### connection.close()
 
 	dfGeo = dfGeo.merge(dfNuts3, on="Nuts3", how="left")
 
 	del dfNuts3
 
-	parquetPath = dicParams['dataFolderParquet']
-	dfGeo.to_parquet(parquetPath + 'dfGeo.parquet.gzip', compression='gzip')  
+	write_parquet( dfGeo, 'dfGeo')
 
 	return dfGeo
 
 
-
 def get_dfSitFreq_from_MDB():
-	'''
-	Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from MDB files.
-	'''
-	from main import dicParams, dicFiles
+	''' Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from MDB files. '''
+	from main import dicParams
 	# SitFreq
 
-	# LOAD SitFreq from 2018
-
-	# Establish a connection to the database
-	connection = mdbConnect(year=dicParams["sitFreqInfoYear"])
-
-	# Execute SQL query
-	#SQL = "SELECT SitFreq, Descr as SitFreqDescr, Defin as SitFreqDefin FROM tblCodsSitFreq union 'NA', 'Não indicado', 'Não indicado';"
+	# LOAD SitFreq from 2018 (year defined in novaenes.yaml as sitFreqInfoYear)
 	SQL = "SELECT SitFreq, Descr as SitFreqDescr, Defin as SitFreqDefin FROM tblCodsSitFreq ;"
-	dfSitFreq = pd.read_sql(SQL, connection)
+	dfSitFreq = read_sql_with_fallback( dicParams["sitFreqInfoYear"], SQLcmds = SQL)
 
-
-	# Close the connection
-	connection.close()
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfSitFreq.to_parquet(parquetPath + 'dfSitFreq.parquet.gzip', compression='gzip')  
-
+	write_parquet( dfSitFreq, 'dfSitFreq')
 	return dfSitFreq
 
+
 def get_dfSchools_from_MDB():
-	'''
-	Return dataframe with School information. Obtain data from MDB files.
-	'''
-	from main import dicParams, dicFiles
-	# Schools
+	''' Return dataframe with School information. Obtain data from MDB files.'''
+	from main import dicParams
 
-	# LOAD 2022
-
-	ano = dicParams['lastYear']
-	# Establish a connection to the database
-	connection = mdbConnect(year=2018)
-
-
-	# Execute SQL query
-	SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
-	dfSchools = pd.read_sql(SQL, connection)
-
-	# Close the connection
-	connection.close()
-	print("Year {} - adding {} schools to the dataframe.".format( ano, dfSchools.shape[0]))
-
-	# Now loop throught the previous years, in descending order, to get schools that no longer exist
 	paramFirstYear = dicParams['firstYear']
 	paramLastYear = dicParams['lastYear']
+
+	SQL = "SELECT " + str(paramLastYear) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
+	dfSchools = read_sql_with_fallback( paramLastYear, SQLcmds = SQL)
+
+	print("Year {} - adding {} schools to the dataframe.".format( paramLastYear, dfSchools.shape[0]))
+
+	# Now loop throught the previous years, in descending order, to get schools that no longer exist
 	for ano in range( paramLastYear-1, paramFirstYear-1, -1):
 		
 		try:
-
-
 			# Establish a connection to the database
-			connection = mdbConnect(year=ano)
+			SQL1 = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, CodDGEEC FROM tblEscolas;"
+			SQL2 = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, int( distrito * 100000 + concelho * 1000 + 999) as CodDGEEC FROM tblEscolas;"
+			dfUpdates = read_sql_with_fallback(year=ano, SQLcmds=[SQL1, SQL2])
 
-			try:
-				# Execute SQL query
-				SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, CodDGEEC FROM tblEscolas;"
-				vprint(SQL)
-				dfUpdates = pd.read_sql(SQL, connection)
-			except:
-				# Execute SQL query
-				SQL = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, int( distrito * 100000 + concelho * 1000 + 999) as CodDGEEC FROM tblEscolas;"
-				vprint(SQL)
-				dfUpdates = pd.read_sql(SQL, connection)
-
-			vprint("Outsite excetion handling, year" + str(ano) + "...")
-
-
-			# Identify rows in dfUpdates that don't exist in dfSchools
-			#mask = ~dfUpdates[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1).isin(dfSchools[['Distrito', 'Concelho', 'Escola']].apply(tuple, axis=1))
+			# Identify rows in dfUpdates that don't exist in dfSchools, select them and then concatenate them to dfSchools
 			mask = ~dfUpdates[['Escola']].apply(tuple, axis=1).isin(dfSchools[['Escola']].apply(tuple, axis=1))
-
-			# Filter rows in dfUpdates based on the mask
 			dfUpdates = dfUpdates[mask]
 			dfUpdates['CodDGEEC'] = dfUpdates['CodDGEEC'].astype(int)
-
-			# Concatenate dfSchools and the filtered new_rows
 			dfSchools = pd.concat([dfSchools, dfUpdates])
-
 			print("Year {} - adding an additional {} schools do dataframe, totaling {}.".format( ano, dfUpdates.shape[0], dfSchools.shape[0]))
 
 			# Reset the index in the result DataFrame
 			dfSchools.reset_index(drop=True, inplace=True)
 
-			# Close the connection
-			connection.close()
 		except Exception as ex:
 			print("Ano:",ano," - Erro: ", ex.message)
 
 	# Assuming 'CodDGEEC' is an integer column
 	dfSchools['CodDGEEC'] = dfSchools['CodDGEEC'].astype(str)
 
-	parquetPath = dicParams['dataFolderParquet']
-	print(dfSchools.shape)
-	print(dfSchools.head(3))
-
-	dfSchools.to_parquet(parquetPath + 'dfSchools.parquet.gzip', compression='gzip')  
-
+	write_parquet( dfSchools, 'dfSchools')
 	return dfSchools
 
 def get_dfCursos_from_MDB():
-	'''
-	Return dataframe with Course information. Obtain data from MDB files.
-	'''
+	'''Return dataframe with Course information. Obtain data from MDB files.'''
+	from main import dicParams, dicExamShortNames
 
-	from main import dicParams, dicFiles
-	# Curso, tipo, subtipo
 	paramFirstYear = dicParams['firstYear']
 	paramLastYear = dicParams['lastYear']
 
 	for ano in range(paramLastYear, paramFirstYear-1, -1):
 		try:
-			# Establish a connection to the database
-			#connection = mdbConnect(year=ano)
-
 			# Execute SQL query
 			SQL = "Select " + str(ano) + " as ano, curso.Curso, curso.TpCurso as TipoCurso, curso.SubTipo as SubtipoCurso, curso.Descr as DescrCurso,"\
 			"tpcurso.Descr as DescrTipoCurso, tpcurso.Ano_Ini as TipoCurso_Ano_Ini, tpcurso.Ano_Term as TipoCurso_Ano_Term, tpcurso.Ordena as TipoCurso_Ordena,"\
 			"subtipos.Descr as DescrSubtipoCurso "\
 			"From ( tblCursos curso inner join tblCursosTipos tpcurso on curso.TpCurso = tpcurso.TpCurso ) inner join tblCursosSubTipos subtipos on curso.SubTipo = subtipos.SubTipo;"
 
-			#dfCursosAno = pd.read_sql(SQL, connection)
-			dfCursosAno = pd.read_sql(SQL, mdbConnect(year=ano))
-
-
+			dfCursosAno = read_sql_with_fallback( year=ano, SQLcmds = SQL)
 			print("Ano {} - cursos: {}".format(ano, dfCursosAno.shape[0]))
 
 			if "dfCursos" not in locals():
@@ -388,42 +246,22 @@ def get_dfCursos_from_MDB():
 		except:
 			print("get_dfCursos_from_MDB, Ano {} - ERRO!".format(ano))
 
-	# Close the connection
-	#connection.close()
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfCursos.to_parquet(parquetPath + 'dfCursos.parquet.gzip', compression='gzip')  
-
+	write_parquet( dfCursos, 'dfCursos')
 	return( dfCursos)
 
 def get_dfExames_from_MDB():
-	'''
-	Return dataframe with Exam information. Obtain data from MDB files.
-	'''
-	from main import dicParams, dicFiles
+	'''Return dataframe with Exam information. Obtain data from MDB files.'''
+	from main import dicParams, dicExamShortNames
 	# Exames
 	paramFirstYear = dicParams['firstYear']
 	paramLastYear = dicParams['lastYear']
 
 	for ano in range(paramLastYear, paramFirstYear-1, -1):
 		try:
-			#connection = mdbConnect(year=ano)
-
-			# # Execute SQL query
-			# if ano > 2014:
-			# 	SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, TipoExame from tblExames;"
-			# else:
-			# 	SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, '?' as TipoExame from tblExames;"
-			# dfExamesAno = pd.read_sql(SQL, connection)
-
 			# Execute SQL query
-			try:
-				SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, TipoExame from tblExames;"
-				dfExamesAno = pd.read_sql(SQL, mdbConnect(year=ano))
-			except:
-				SQL = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, '?' as TipoExame from tblExames;"
-				dfExamesAno = pd.read_sql(SQL, mdbConnect(year=ano))
-
+			SQL1 = "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, TipoExame from tblExames;"
+			SQL2 =  "Select " + str(ano) + " as ano, Exame, Descr as DescrExame, 'ND' as TipoExame from tblExames;"
+			dfExamesAno = read_sql_with_fallback( year=ano, SQLcmds = [SQL1, SQL2])
 
 			if "dfExames" not in locals():
 				dfExames = dfExamesAno
@@ -431,79 +269,44 @@ def get_dfExames_from_MDB():
 				dfExames = dfExames.append(dfExamesAno)
 		except:
 			print("get_dfExames_from_MDB, Ano {} - ERRO!".format(ano))
+	
+		dfExames['DescrExameAbrev'] = dfExames['DescrExame'].replace(dicExamShortNames)
 
-		replacement_dict = {}
-		replacement_dict['Biologia e Geologia'] = 'Biologia/Geol.'
-		replacement_dict['Física e Química A'] = 'Física/Quim. A'
-		replacement_dict['Matemática Aplic. às Ciências Soc.'] = 'MACS'
-		replacement_dict['Geometria Descritiva A'] = 'Geometr.D.A'
-		replacement_dict['História da Cultura e das Artes'] = 'Hist.Cult.Artes'
-		replacement_dict['Literatura Portuguesa'] = 'Liter.Portuguesa'
-		replacement_dict['Espanhol (iniciação)'] = 'Espanhol (inic.)'
-		dfExames['DescrExameAbrev'] = dfExames['DescrExame'].replace(replacement_dict)
-
-
-	# Close the connection
-	#connection.close()
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfExames.to_parquet(parquetPath + 'dfExames.parquet.gzip', compression='gzip')  
-
+	write_parquet(dfExames, "dfExames")
 	return dfExames
 
 def get_dfResultados_from_MDB():
-	'''
-	Return dataframe with Exam Results information. Obtain data from MDB files.
-	'''
-	from main import dicParams, dicFiles
-	# Resultados dos Exames
+	'''Return dataframe with Exam Results information. Obtain data from MDB files.'''
+	from main import dicParams
+	paramFirstYear = dicParams['firstYear']
+	paramLastYear = dicParams['lastYear']
 
+	for ano in range(paramLastYear, paramFirstYear-1, -1):
+		SQL1 = "Select " + str(ano) + " as ano, * from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
+		SQL2 = "Select " + str(ano) + " as ano, *, 'ND' as ParaCFCEPE from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
+		dfResultadosAno = read_sql_with_fallback( year=ano, SQLcmds = [SQL1, SQL2])
 
-	# LOAD Resultados for all years
+		dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
+		dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
+		dfResultadosAno['Class_Exam_Rounded'] = (dfResultadosAno['Class_Exam'] + 0.001).round().astype(int)
+		dfResultadosAno['Class_Exam_RoundUp'] = (dfResultadosAno['Class_Exam'] + 0.49).round().astype(int)
+		dfResultadosAno = dfResultadosAno.dropna(subset=['Class_Exam'])
 
-	for ano in range(2022, 2008-1, -1):
-		try:
-			# Establish a connection to the database
-			connection = mdbConnect(year=ano)
+		#use a lambda function to define new column "Covid" with value "Before" if ano < 2020, else "After"
+		dfResultadosAno["Covid"] = dfResultadosAno.apply(lambda row: "Before" if row["ano"] < 2020 else "After", axis=1)
 
-			# Execute SQL query
-			if ano > 2015:
-				SQL = "Select " + str(ano) + " as ano, * from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
-			else:
-				SQL = "Select " + str(ano) + " as ano, *, '?' as ParaCFCEPE from tblHomologa_" + str(ano) + " where class_exam between 0 and 200;"
+		if "dfResultados" not in locals():
+			dfResultados = dfResultadosAno
+		else:
+			dfResultados = dfResultados.append(dfResultadosAno)
 
-			dfResultadosAno = pd.read_sql(SQL, connection)
-
-
-			dfResultadosAno['Class_Exam'] = dfResultadosAno['Class_Exam'] / 10
-			dfResultadosAno['Sexo'] = dfResultadosAno['Sexo'].str.upper()
-			dfResultadosAno['Class_Exam_Rounded'] = (dfResultadosAno['Class_Exam'] + 0.001).round().astype(int)
-			dfResultadosAno['Class_Exam_RoundUp'] = (dfResultadosAno['Class_Exam'] + 0.49).round().astype(int)
-			dfResultadosAno = dfResultadosAno.dropna(subset=['Class_Exam'])
-
-			#use a lambda function to define new column "Covid" with value "Before" if ano < 2020, else "After"
-			dfResultadosAno["Covid"] = dfResultadosAno.apply(lambda row: "Before" if row["ano"] < 2020 else "After", axis=1)
-
-			if "dfResultados" not in locals():
-				dfResultados = dfResultadosAno
-			else:
-				dfResultados = dfResultados.append(dfResultadosAno)
-		except:
-			print("get_dfResultados_from_MDB, Ano {} - ERRO!".format(ano))
-
-	# Close the connection
-	connection.close()
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfResultados.to_parquet(parquetPath + 'dfResultados.parquet.gzip', compression='gzip')
-
+	write_parquet( dfResultados, 'dfResultados')
 	return( dfResultados)
 
 # endregion
 
 # region dfAll from Datasets
 def get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, dfSitFreq):
-	from main import dicParams, dicFiles
 
 	dfSchools = dfSchools.merge(dfGeo, left_on=['Distrito', 'Concelho'], right_on=['Distrito', 'Concelho'], how='inner')
 	dfAll = dfResultados.merge(dfSchools, left_on=['Escola'], right_on=['Escola'], how='inner')
@@ -518,25 +321,18 @@ def get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, 
 	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
 	dfAll = dfAll.merge(dfCursos, left_on=['ano', 'Curso'], right_on=['ano', 'Curso'], how='inner')
 	
-	parquetPath = dicParams['dataFolderParquet']
-	dfAll.to_parquet(parquetPath + 'dfAll.parquet.gzip', compression='gzip')
-
+	write_parquet( dfAll, 'dfAll')
 	return( dfAll)
 
 def get_dfAllFase1_from_datasets(dfAll):
-	from main import dicParams, dicFiles
-
 	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
 	dfAllFase1 = dfAll[dfAll["Fase"]=='1']
 	
-	parquetPath = dicParams['dataFolderParquet']
-	dfAllFase1.to_parquet(parquetPath + 'dfAllFase1.parquet.gzip', compression='gzip')
-
+	write_parquet( dfAllFase1, 'dfAllFase1')
 	return( dfAllFase1)
 
     
 def get_dfInfoEscolas_from_datasets(dfAllFase1):
-	from main import dicParams, dicFiles
 
 	myclock= vprint_time(prefix = "dfInfoEscolas - Applying ""InfoEscolas"" on dfAllFase1 filters and calculating group statistcs.")
 	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
@@ -550,26 +346,20 @@ def get_dfInfoEscolas_from_datasets(dfAllFase1):
 	dfStats = dfInfoEscolas.groupby(['ano', "Exame", 'Class_Exam_RoundUp']).agg(['median', 'mean', 'count'])['CIF'].rename(columns={'median': 'ExamRoundUp_median_CIF', 'mean': 'ExamRoundUp_mean_CIF', 'count': 'ExamRoundUp_count_CIF'})
 	dfInfoEscolas = dfInfoEscolas.merge(dfStats, left_on=['ano', "Exame", 'Class_Exam_RoundUp'], right_on=['ano', "Exame", 'Class_Exam_RoundUp'], how='left')
 
-	# Bonus is the actual grade (CIF) minus the expected grade
-	# Positive if actual CIF was above expected; negative if it was below expected
+	# Bonus is the actual grade (CIF) minus the expected grade. Positive if actual CIF was above expected; negative if it was below expected
 	dfInfoEscolas["CIF_bonus_median_ExamRounded"] = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRounded_median_CIF"]
 	dfInfoEscolas["CIF_bonus_mean_ExamRounded"]   = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRounded_mean_CIF"]
 	dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRoundUp_median_CIF"]
 	dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"]   = dfInfoEscolas["CIF"] - dfInfoEscolas["ExamRoundUp_mean_CIF"]
 
-	# Adjusted Bonus is the same, but we compensate for the rounding done in Class_Exam_Rounded or Class_Exam_RoundUp
-	# If we rounded up, we compensate by subtracting that, and vice-versa
+	# Adjusted Bonus is the same, but we compensate for the rounding done in Class_Exam_Rounded or Class_Exam_RoundUp. If we rounded up, we compensate by subtracting that, and vice-versa
 	dfInfoEscolas["CIF_bonus_adj_median_ExamRounded"] = dfInfoEscolas["CIF_bonus_median_ExamRounded"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_Rounded"]
 	dfInfoEscolas["CIF_bonus_adj_mean_ExamRounded"]   = dfInfoEscolas["CIF_bonus_mean_ExamRounded"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_Rounded"]
 	dfInfoEscolas["CIF_bonus_adj_median_ExamRoundUp"] = dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
 	dfInfoEscolas["CIF_bonus_adj_mean_ExamRoundUp"]   = dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
 
-
-	parquetPath = dicParams['dataFolderParquet']
-	dfInfoEscolas.to_parquet(parquetPath + 'dfInfoEscolas.parquet.gzip', compression='gzip')
-
+	write_parquet( dfInfoEscolas, 'dfInfoEscolas')
 	myclock= vprint_time(prefix = "dfInfoEscolas - created and save to parquet! ", start_time=myclock)
-
 	return( dfInfoEscolas)
 # endregion
 

@@ -51,6 +51,7 @@ dicParquetBase = dataParams['dicParquetBase']
 dicParquetExtra = dataParams['dicParquetExtra']
 dicParams = dataParams['dicParams']
 dicNuts2 = dataParams['dicNuts2']
+dicExamShortNames = dataParams['dicExamShortNames']
 
 
 if dicParams["ignore_known_warnings"] == True:
@@ -123,27 +124,20 @@ def it():
 			extract_MDBs()
 
 		# Create Parquet files
-		print("Creating all Parquet base files from MDB")
-		print("This will also load all base dataframes")
+		print("Creating all Parquet base files from MDB. This will also load all base dataframes")
 
 		dfGeo           = get_dfGeo_from_MDB()
-		print("dfGeo.shape: ", dfGeo.shape)
-		current_time = vprint_time(current_time, 'Loaded dfGeo from MDB...')
+		current_time = vprint_time(current_time, 'Loaded dfGeo from MDB. Shape: ' + str(dfGeo.shape) + '...')
 		dfSchools       = get_dfSchools_from_MDB()
-		print("dfSchools.shape: ", dfSchools.shape)
-		current_time = vprint_time(current_time, 'Loaded dfSchools from MDB...')
+		current_time = vprint_time(current_time, 'Loaded dfSchools from MDB. Shape: ' + str(dfSchools.shape) + '...')
 		dfCursos        = get_dfCursos_from_MDB()
-		print("dfCursos.shape: ", dfCursos.shape)
-		current_time = vprint_time(current_time, 'Loaded dfCursos from MDB...')
+		current_time = vprint_time(current_time, 'Loaded dfCursos from MDB. Shape: ' + str(dfCursos.shape) + '...')
 		dfExames        = get_dfExames_from_MDB()
-		print("dfExames.shape: ", dfExames.shape)
-		current_time = vprint_time(current_time, 'Loaded dfExames from MDB...')
+		current_time = vprint_time(current_time, 'Loaded dfExames from MDB. Shape: ' + str(dfExames.shape) + '...')
 		dfResultados    = get_dfResultados_from_MDB()
-		print("dfResultados.shape: ", dfResultados.shape)
-		current_time = vprint_time(current_time, 'Loaded dfResultados from MDB...')
+		current_time = vprint_time(current_time, 'Loaded dfResultados from MDB. Shape: ' + str(dfResultados.shape) + '...')
 		dfSitFreq    = get_dfSitFreq_from_MDB()
-		print("dfSitFreq.shape: ", dfSitFreq.shape)
-		current_time = vprint_time(current_time, 'Loaded dfSitFreq from MDB...')
+		current_time = vprint_time(current_time, 'Loaded dfSitFreq from MDB. Shape: ' + str(dfSitFreq.shape) + '...')
 
 	else:
 		# Because parquet base files already exist, they were not created now
@@ -152,78 +146,48 @@ def it():
 
 		print("Loading all base dataframes from Parquet base files on disk")
 
-		dfGeo           = get_dfGeo_from_Parquet()
-		print("dfGeo.shape: ", dfGeo.shape)
-		current_time = vprint_time(current_time, 'Loaded dfGeo from parquet...')
-		dfSchools       = get_dfSchools_from_Parquet()
-		print("dfSchools.shape: ", dfSchools.shape)
-		current_time = vprint_time(current_time, 'Loaded dfSchools from parquet...')
-		dfCursos        = get_dfCursos_from_Parquet()
-		print("dfCursos.shape: ", dfCursos.shape)
-		current_time = vprint_time(current_time, 'Loaded dfCursos from parquet...')
-		dfExames        = get_dfExames_from_Parquet()
-		print("dfExames.shape: ", dfExames.shape)
-		current_time = vprint_time(current_time, 'Loaded dfExames from parquet...')
-		dfResultados    = get_dfResultados_from_Parquet()
-		print("dfResultados.shape: ", dfResultados.shape)
-		current_time = vprint_time(current_time, 'Loaded dfResultados from parquet...')
+		dfGeo        = get_dfGeo_from_Parquet()
+		dfSchools    = get_dfSchools_from_Parquet()
+		dfCursos     = get_dfCursos_from_Parquet()
+		dfExames     = get_dfExames_from_Parquet()
+		dfResultados = get_dfResultados_from_Parquet()
 		dfSitFreq    = get_dfSitFreq_from_Parquet()
-		print("dfSitFreq.shape: ", dfSitFreq.shape)
-		current_time = vprint_time(current_time, 'Loaded dfSitFreq from parquet...')
 
 
-	if False:
+	#parquetPath = dicParams['dataFolderParquet']
+	if createParquetBase == True:
+		# If we created the parquet base files, we need to create the parquet extra files
+		createParquetExtra = True
+	else:
+		createParquetExtra = False
+		for key in dicParquetExtra:
+			file = parquetPath + dicParquetExtra[key] + ".parquet.gzip"
+			if not exists(file):
+				print("Parquet extra file", file, " does not exist. Creating all Parquet extra files from existing parquet files")
+				createParquetExtra = True
+				break
+	
+	if createParquetExtra == True:
 
-		#parquetPath = dicParams['dataFolderParquet']
-		if createParquetBase == True:
-			# If we created the parquet base files, we need to create the parquet extra files
-			createParquetExtra = True
-		else:
-			createParquetExtra = False
-			for key in dicParquetExtra:
-				file = parquetPath + dicParquetExtra[key] + ".parquet.gzip"
-				if not exists(file):
-					print("Parquet extra file does not exist; creating it: " + file)
-					print("Creating all Parquet extra files from existing parquet files")
-					createParquetExtra = True
-					break
-		
-		if createParquetExtra == True:
+		print("Creating Extra parquet files from dataframes")
 
-			print("Creating Extra parquet files from dataframes")
+		dfAll = get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, dfSitFreq)
+		current_time = vprint_time(current_time, 'Created dfAll from datasets. Shape: ' + str(dfAll.shape) + '...')
 
-			dfAll = get_dfAll_from_datasets(dfGeo, dfSchools, dfCursos, dfExames, dfResultados, dfSitFreq)
-			print("dfAll.shape: ", dfAll.shape)
-			current_time = vprint_time(current_time, 'Created dfAll from datasets...')
+		dfAllFase1 = get_dfAllFase1_from_datasets(dfAll)
+		current_time = vprint_time(current_time, 'Created dfAllFase1 from datasets. Shape: ' + str(dfAllFase1.shape) + '...')
 
-			dfAllFase1 = get_dfAllFase1_from_datasets(dfAll)
-			print("dfAllFase1.shape: ", dfAllFase1.shape)
-			current_time = vprint_time(current_time, 'Created dfAllFase1 from datasets...')
+		dfInfoEscolas = get_dfInfoEscolas_from_datasets(dfAllFase1)
+		current_time = vprint_time(current_time, 'Created dfInfoEscolas from datasets. Shape: ' + str(dfInfoEscolas.shape) + '...')
 
-			dfInfoEscolas = get_dfInfoEscolas_from_datasets(dfAllFase1)
-			print("dfInfoEscolas.shape: ", dfInfoEscolas.shape)
-			current_time = vprint_time(current_time, 'Created dfInfoEscolas from datasets...')
+	else:
+		# Because parquet extra files already exist, just load them from disk
 
-		else:
-			# Because parquet extra files already exist, just load them from disk
+		print("Loading Extra parquet files from disk")
 
-			print("Loading Extra parquet files from disk")
-
-			dfAll = get_dfAll_from_Parquet()
-
-			current_time = vprint_time(current_time, 'Created dfAll from Parquet...')
-			dfAllFase1 = get_dfAllFase1_from_Parquet()
-			print("dfAllFase1.shape: ", dfAllFase1.shape)
-
-			current_time = vprint_time(current_time, 'Created dfAllFase1 from Parquet...')
-			dfAllFase1 = get_dfAllFase1_from_Parquet()
-			print("dfAllFase1.shape: ", dfAllFase1.shape)
-			
-			current_time = vprint_time(current_time, 'Created dfAllFase1 from Parquet...')
-			dfInfoEsclas = get_dfInfoEscolas_from_Parquet()
-			print("dfInfoEsclas.shape: ", dfInfoEsclas.shape)
-			current_time = vprint_time(current_time, 'Created dfInfoEsclas from Parquet...')
-
+		dfAll         = get_dfAll_from_Parquet()
+		dfAllFase1    = get_dfAllFase1_from_Parquet()
+		dfInfoEscolas = get_dfInfoEscolas_from_Parquet()
 
 
 if __name__ == '__main__':

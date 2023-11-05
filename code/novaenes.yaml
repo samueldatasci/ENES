@@ -60,6 +60,16 @@ dicNuts2:
   30: RA Madeira
   90: Estrangeiro
 
+dicExamShortNames:
+  Biologia e Geologia:Biologia/Geol.
+  Física e Química A:Física/Quim. A
+  Matemática Aplic. às Ciências Soc.:MACS
+  Geometria Descritiva A:Geometr.D.A
+  História da Cultura e das Artes:Hist.Cult.Artes
+  Literatura Portuguesa:Liter.Portuguesa
+  Espanhol (iniciação):Espanhol (inic.)
+
+
 # Files that are not used - this is for reference; these are 9th grade exams
 # ENEB2008.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2008-itens_1.zip
 # ENEB2009.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2009.zip
