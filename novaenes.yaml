@@ -5,9 +5,11 @@ dicParams:
   dataFolderZIP: C:/ENES/ZIP/
   ignore_known_warnings: true
   verbose: true
+  parquetCompression: gzip
+  # None or gzip
+
   firstYear: 2008
   lastYear: 2022
-  
   geoNuts3infoYear: 2018
   geoInfoYear: 2021
   sitFreqInfoYear: 2018
@@ -48,6 +50,11 @@ dicParquetExtra:
   0: dfAll
   1: dfAllFase1
   2: dfInfoEscolas
+
+dicSaveDataframeAsCSV:
+  dfInfoEscolas : True
+  dfAll : False
+  dfAllFase1: False
 
 # Names for Nuts2
 dicNuts2:

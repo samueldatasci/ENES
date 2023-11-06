@@ -87,14 +87,30 @@ def read_sql_with_fallback( year, SQLcmds = []):
 def read_parquet( filename):
 	from main import dicParams
 	parquetPath = dicParams['dataFolderParquet']
-	dfParquet = pd.read_parquet(dicParams['dataFolderParquet'] + filename + '.parquet.gzip')
+	parquetCompression = dicParams['parquetCompression']
+	if parquetCompression == 'None':
+		parquetCompression = None
+		filename = parquetPath + filename + '.parquet'
+	else:
+		filename = parquetPath + filename + '.parquet.' + parquetCompression
+
+	dfParquet = pd.read_parquet( filename)
 	vprint("Loaded Parquet file ", filename, "shape: ", dfParquet.shape)
 	return dfParquet
 
 def write_parquet( df, filename):
-	from main import dicParams
+	from main import dicParams, dicSaveDataframeAsCSV
 	parquetPath = dicParams['dataFolderParquet']
-	df.to_parquet(parquetPath + filename + '.parquet.gzip', compression='gzip')
+	parquetCompression = dicParams['parquetCompression']
+	if filename in dicSaveDataframeAsCSV:
+		if dicSaveDataframeAsCSV[filename] == True:
+			df.to_csv(parquetPath + filename + '.csv', index=False)
+	if parquetCompression == 'None':
+		parquetCompression = None
+		filename = parquetPath + filename + '.parquet'
+	else:
+		filename = parquetPath + filename + '.parquet.' + parquetCompression
+	df.to_parquet(filename, compression=parquetCompression)
 	vprint("Saved Parquet file ", filename, ", shape: ", df.shape)
 # endregion database functions
 

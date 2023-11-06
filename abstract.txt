@@ -1,3 +1,9 @@
+This is an observational study, using secondary quantitative data.
+This information is not a sample, but a census.
+
+---------------
+
+
 We propose to study the results of the exams taken in first phase in 2019 in order to enter higher education.
 
 We are conducting an observational study, as we do not control any of the study's variables, but rather observe secondary quantitative data.

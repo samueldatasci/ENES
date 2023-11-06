@@ -1,0 +1,192 @@
+
+```{r}
+library(ggplot2)
+library(RMySQL)
+library(tidyr)
+library(base)
+library(plm)
+library(dplyr)
+library(WDI)
+
+
+# Breusch Pagan Test: 
+library(lmtest)
+
+```
+
+
+```{r}
+# Verbinden Sie sich mit der MySQL-Datenbank
+con <- dbConnect(MySQL(),
+                 host = "localhost",
+                 user = "root",
+                 password = "rute",
+                 dbname = "NOVAENES")
+
+dbconn <- dbConnect(MySQL(), host = "localhost", user = "root", password = "rute", dbname = "NOVAENES");
+feed = dbSendQuery(dbconn, "Select * from vwenes2019")
+vwENES <- dbFetch(feed, n = -1)
+dbClearResult(feed)
+nrow(vwENES)
+
+# Schließen Sie die Verbindung zur MySQL-Datenbank
+dbDisconnect(con)
+vwENES
+```
+
+```{r}
+filtered_df <- data.frame(gradeexamechelon = vwENES$gradeexamechelon,
+                    PubPriv = vwENES$PubPriv,
+                    examTitle = vwENES$examTitle,
+                    gender = vwENES$gender,
+                    coursename = vwENES$coursename,
+                    bonus_int_national_adjusted = vwENES$bonus_int_national_adjusted,
+                    nuts2 = vwENES$NUTS2_NAME,
+                    nuts3 = vwENES$NUTS3_NAME, 
+                    gradeexam = vwENES$gradeexam)
+filtered_df
+```
+
+1. Plotting
+```{r}
+ggplot(filtered_df, aes(x=examTitle, y=bonus_int_national_adjusted)) + geom_boxplot() + facet_wrap(~gender)+ theme_minimal() +   scale_x_discrete(guide = guide_axis(n.dodge=3), label = function(x) stringr::str_trunc(x, 9, ellipsis=''))
+
+
+
+ggplot(filtered_df, aes(x=PubPriv, y=bonus_int_national_adjusted)) + geom_boxplot() + theme_minimal()
+
+ggplot(filtered_df, aes(x=gender, y=bonus_int_national_adjusted)) + geom_bar(stat='identity') + theme_minimal()
+
+ggplot(filtered_df, aes(x=nuts3, y=bonus_int_national_adjusted)) + geom_bar(stat='identity') + theme_minimal()
+
+ggplot(filtered_df, aes(x=nuts3, y=bonus_int_national_adjusted)) + 
+  geom_bar(stat='identity') + 
+  theme_minimal() + 
+  scale_x_discrete(label = function(x) stringr::str_trunc(x, 16, ellipsis='')) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+
+
+filtered_df_mean <- filtered_df %>% group_by(nuts3) %>% 
+  summarize(mean_bonus = mean(bonus_int_national_adjusted))
+
+ggplot(filtered_df_mean, aes(x=nuts3, y=mean_bonus)) + 
+  geom_bar(stat='identity', fill='blue') + 
+  ggtitle("Mean bonus_int_national_adjusted by nuts3") +
+  theme_minimal()+
+  scale_x_discrete(label = function(x) stringr::str_trunc(x, 16, ellipsis='')) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+
+
+```
+
+2. Correlation 
+```{r}
+#List of categorical variables
+cat_vars <- c("PubPriv", "examTitle", "gender", "nuts3")
+
+#Initialize a matrix to store the p-values
+pvals <- matrix(nrow=length(cat_vars), ncol=length(cat_vars))
+
+#Loop through all pairs of categorical variables
+for(i in 1:length(cat_vars)){
+  for(j in 1:length(cat_vars)){
+    if(i<j){
+      cat1 <- cat_vars[i]
+      cat2 <- cat_vars[j]
+      pvals[i,j] <- chisq.test(filtered_df[,cat1], filtered_df[,cat2])$p.value
+    }
+  }
+}
+
+
+library(graphics)
+heatmap(pvals, Rowv=NA, Colv=NA, col=heat.colors(100), scale="none", margins=c(5,10))
+
+
+```
+
+
+
+
+
+
+2. MLRM 
+```{r}
+# creating combination dummy variables 
+m_pub=as.integer(filtered_df$PubPriv=='PUB' & filtered_df$gender=='M')
+m_priv=as.integer(filtered_df$PubPriv=='PRI' & filtered_df$gender=='M')
+f_pub=as.integer(filtered_df$PubPriv=='PUB' & filtered_df$gender=='F')
+f_priv=as.integer(filtered_df$PubPriv=='PRI' & filtered_df$gender=='F')
+bonus_int_national_adjusted = filtered_df$bonus_int_national_adjusted
+examTitle = filtered_df$examTitle
+nuts3 = filtered_df$nuts3
+```
+
+
+```{r}
+reg = lm(bonus_int_national_adjusted ~ m_pub + m_priv + f_pub + nuts3 + examTitle)
+summary(reg)
+```
+```{r}
+# robust estimation
+coeftest(reg) # Kovarianzmatrix zur berechnung
+coeftest(reg, vcov=hccm)# Heteroskedastizität-konsistente Kovarianzmatrix (HCCM) 
+```
+
+
+
+
+
+
+
+
+4. Checking for heteroskedasticity and functional form misspecification
+
+# H0 : Var(u | X) = σ2 (constant) --> homoskedastic
+# H1 : Var(u | X) = σ2i (not constant) --> heteroskedastic
+```{r}
+library(car)
+
+# Breusch Pagan Test: 
+bptest(reg)
+
+# white special test: 
+summary(lm(resid(reg)^2 ~ I(fitted(reg)) + I(fitted(reg)^2)) )
+
+
+coeftest(reg, vcov=hccm)
+
+
+# RESET TEST - functional form misspecification
+reset(reg, vcov=hccm)
+
+```
+```{r}
+reg2 = lm(bonus_int_national_adjusted ~ log(m_pub) + log(m_priv) + log(f_pub) + nuts3 + examTitle)
+summary(reg2)
+
+```
+
+
+
+
+```{r}
+lm
+```
+
+
+```{r}
+residuals_data <- data.frame(residuals = residuals(reg), fitted = fitted(reg))
+ggplot(residuals_data, aes(x = fitted, y = residuals)) + geom_point() + geom_hline(yintercept = 0) + 
+  ggtitle("Residuals vs Fitted values") + theme_minimal()
+
+```
+
+
+
+
+# robust estimation?
+
+

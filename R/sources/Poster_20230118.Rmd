@@ -1,0 +1,226 @@
+---
+title: <div style = "margin-top:5%">IS ACCESS TO UNIVERSITY FAIR?</div>>
+main_fontfamily: Arial
+
+author:
+  - name: Carlota Vieira - 20210684
+    main: true
+  - name: Felix Gaber - 20221385
+    main: true
+  - name: Inês Rocha - 20220052
+    main: true
+  - name: Samuel Santos - 20220609
+    main: true
+
+column_numbers: 3
+logoright_name: https&#58;www.unl.pt/sites/default/files/styles/large/public/ims_noticia_a.png
+
+primary_colour: "#B2D23C"
+secondary_colour: "#A4A9AC"
+columnline_col: "#B2D23C"
+author_textcol: "#515B61"
+
+output: 
+  posterdown::posterdown_html:
+    self_contained: TRUE
+knit: pagedown::chrome_print
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r libraries, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(RMySQL)
+library(tidyr)
+library(base)
+library(plm)
+```
+
+```{r database, include=FALSE}
+con <- dbConnect(MySQL(),
+                 host = "localhost",
+                 user = "root",
+                 password = "password",
+                 dbname = "NOVAENES")
+
+query <- "select * from vwenes2019;"
+result <- dbSendQuery(con, query)
+ENES_2019 <- dbFetch(result, n = - 1)
+dbClearResult(result)
+
+dbDisconnect(con)
+```
+
+```{r filterenes, include=FALSE}
+filtered_enes <- data.frame(ENESid = ENES_2019$ENESid,
+                            school = ENES_2019$school,
+                            schoolName = ENES_2019$schoolName,
+                            nuts2 = ENES_2019$nuts2,
+                            nuts2Name = ENES_2019$NUTS2_NAME,
+                            nuts3 = ENES_2019$nuts3,
+                            nuts3Name = ENES_2019$NUTS3_NAME, 
+                            PubPriv = ENES_2019$PubPriv,
+                            exam = ENES_2019$examcode,
+                            examName = ENES_2019$examTitle,
+                            examasinternalstudent = ENES_2019$examasinternalstudent,
+                            hassomeinternalexams = ENES_2019$hassomeinternalexams,
+                            toapprove = ENES_2019$toapprove,
+                            toimprove = ENES_2019$toimprove,
+                            toapplyforuniv = ENES_2019$toapplyforuniv,
+                            tocontinuestudies = ENES_2019$tocontinuestudies,
+                            gender = ENES_2019$gender,
+                            age = ENES_2019$age,
+                            course = ENES_2019$coursecode,
+                            courseName = ENES_2019$coursename,
+                            frequencysituation = ENES_2019$frequencysituation,
+                            gradeinternal = ENES_2019$gradeinternal,
+                            gradeexam = ENES_2019$gradeexam,
+                            gradeexamechelon = ENES_2019$gradeexamechelon,
+                            gradefinal = ENES_2019$gradefinal,
+                            bonus_int_national_adjusted = ENES_2019$bonus_int_national_adjusted)
+```
+
+# Introduction
+
+Access to University courses is determined in Portugal by several factors. The most impactful are the results in the national exams (equal across the country and anonymously corrected by independent examiners) and the grades from secondary education, that mostly result from evaluation inside the school but can in some cases also include exam results (for students failing internal approval). Students are then serialized and placed according to available vacancies (we're disregarding special contingents that some courses, namely for disabilities or students coming from Azores/Madeira).
+
+We used public information from the Ministry of Education (ENES), from the year 2019, to assess the fairness of this evaluations.
+
+We only considered internal students, first phase and the top 8 exams, which are the exams with the most attendees.
+
+# Objective
+
+Our main research question is: **"Do we have evindence of a private/public school premium?"**.
+Additionally if this prove to be true, we are going trough the question: **"What about the premium with the highest grades?"**.
+To provide a more accurate and fair method for comparing school grades by establishing genuine comparability through our model, taking into account factors such as location and school type in order to level the playing field and improve assessments of school performance.
+
+# Methodology
+
+# Results
+
+## Step 1
+
+To get a sense of the distribution of exam grades, we counted the number of exams with each possible result, up to 1 decimal place, from 0.0 up to 20.0.
+
+```{r examgrades, out.width = '100%', fig.align = 'center', fig.height = 3}
+grades <- filtered_enes %>% 
+  count(gradeexam)
+
+ggplot(grades, aes(gradeexam, n)) + 
+  geom_line(color = "#9ACD32") + 
+  ggtitle("Exam Grades") + 
+  xlab("Exam Grade") + 
+  ylab("Count of Exam Grade") +
+  geom_text(data = subset(grades, gradeexam %in% c(8.4, 8.5, 9.4, 9.5, 10.4, 10.5)),
+            aes(gradeexam, n, label = paste0(gradeexam))) +
+  theme(plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5))
+```
+
+This may be one of those pictures that are worth a thousand words. This distribution looks like a normal distribution with a repeated pattern, where grades ending with 3 or 4 decimal places are very frequently upped so that, by ending with 5, it will be rounded up to the next integer value. This effect is less evident, but also present between .9/.0.
+This effect is exacerbated between 9.4 and 9.5, which represents the difference between approving or failing and, in the latter, potentially staying one more year in secondary education.
+
+## Step 2
+
+We then plotted the exam echelon grade distribution, considering Male/Female and Public/Private school.
+
+```{r grades_gender_pubpriv, out.width = '100%', fig.align = 'center', fig.height = 4}
+grades_gender_pubpriv <- filtered_enes %>%
+  group_by(gender, PubPriv, examName) %>%
+  count(gradeexamechelon)
+
+ggplot(grades_gender_pubpriv, aes(gradeexamechelon, n, color = gender, linetype = PubPriv)) + 
+  geom_line() +
+  scale_color_manual(values = c("#B2D23C", "#A4A9AC")) +
+  ggtitle("Distribution of Exam Echelon per Gender and School Type") +
+  xlab("Exam Echelon") +
+  ylab("Count of Exam Echelon") +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  theme(plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) + 
+  facet_wrap(~ examName)
+```
+
+Data above normalized.
+
+```{r grades_gender_pubpriv_normal, out.width = '100%', fig.align = 'center', fig.height = 4, warning=FALSE, message=FALSE}
+grades_gender_pubpriv <- grades_gender_pubpriv %>%
+  group_by(gender, PubPriv, examName) %>%
+  mutate(normalized = n/sum(n))
+
+ggplot(grades_gender_pubpriv, aes(gradeexamechelon, normalized, color = gender, linetype = PubPriv)) + 
+  geom_line() +
+  scale_color_manual(values = c("#B2D23C", "#A4A9AC")) +
+  ggtitle("Normalized Exam Echelon per Gender and School Type") + 
+  xlab("Exam Echelon") +
+  ylab("Normalized Count of Exam Echelon") +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  theme(plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) + 
+  facet_wrap(~ examName)
+```
+
+Next we plotted the exam echelon bonus considering Male/Female and Public/Private school.
+
+```{r bonus_gender_pubpriv, out.width = '100%', fig.align = 'center', fig.height = 4, warning=FALSE, message=FALSE}
+bonus_gender_pubpriv <- filtered_enes %>%
+  group_by(gender, PubPriv, examName, gradeexamechelon) %>%
+  summarize(mean_bonus = mean(bonus_int_national_adjusted))
+
+suppressWarnings(ggplot(bonus_gender_pubpriv, aes(gradeexamechelon, mean_bonus, color = gender, linetype = PubPriv)) +
+                   geom_line() +
+                   scale_color_manual(values = c("#B2D23C", "#A4A9AC")) +
+                   ggtitle("Exam Echelon Bonus per Gender and School Type") + 
+                   xlab("Exam Echelon") +
+                   ylab("Mean of Bonus") +
+                   scale_y_continuous(limits = c(-2, 2)) +
+                   scale_linetype_manual(values = c("solid", "dashed")) +
+                   theme(plot.background = element_rect(fill = "white"),
+                         panel.background = element_rect(fill = "white"),
+                         plot.title = element_text(hjust = 0.5)) + 
+                   facet_wrap(~ examName))
+```
+
+We can see the bonus per gender and school type is more evident in the disciplines Filosofia, Historia A, and Geografia A.
+In Historia A, we can see that females in a private school get a bigger bonus than the rest in the lower grades part of the plot but on the opposite, side of the top grades, males in private schools tend to surpass them in terms of the bonus.
+For the exams for Matemática A and Portugues the bonus is near neutral all along the exam grades. Males tend to get a higer bonus in the lower grades but it quickly evens out with grades above 5.
+
+####
+Because every student in the country takes exactly the same exam, it should on average be a fair representation of the student's knowledge, compared to other students.
+* Comments to add here: mention law of large numbers and central limit theorem *
+
+There might be several explanations for having higher scores in private schools, including better socioeconomic conditions of those families.
+#####
+
+## Step 3
+
+Based on the previous assumption, we went on to estimate the internal result based on the exam grade. We defined as "bonus" the difference between the actual internal grade and what we expected, based on the exam. We measured this bonus for the 8 most common exams across the 2008-2019 period.
+
+```{r table1, out.width = '100%', fig.align = 'center', fig.height = 4}
+filtered_enes[1:5, 1:2]
+```
+
+There is a statistically significant and quantitatively relevant impact on the internal grade based on both gender (bonus for female students) and for the system the student attends (bonus for private schools). These two bonus are cumulative, resulting in the bonus for female students in private schools being .9 above the bonus for male students in public schools.
+
+# Next Steps
+
+There is any?
+
+# Conclusion
+
+Something
+
+# References
+EDULOG (2021) Edulog Recomenda Políticas Para Alcançar a Equidade no Ensino Superior, EDULOG. Available at: https://www.edulog.pt/artigos/em-analise/edulog-recomenda-politicas-para-alcancar-equidade-no-ensino-superior (Accessed: January 15, 2023).
+Justino, J. (2015) Acesso ao Ensino Superior: Desafios Para O Século XXI, cnedu. Available at:
+https://www.cnedu.pt/content/edicoes/seminarios_e_coloquios/LivroCNE_AcessoEnsinoSuperior.pdf (Accessed: January 15, 2023).
+Pereira, M.J. et al. (2011) Rankings Escolares E Desigualdades, Repositorio Aberto UP. Available at:
+https://repositorio-aberto.up.pt/bitstream/10216/60982/2/84803.pdf (Accessed: January 15, 2023).
+Estatsticas do Ensino Secundário.Infoescolas. Available at: https://infoescolas.medu.pt/Secundario/?i=1#.Y8Qzqy8qJhE (Accessed: January 15, 2023).
+Relatórios/Estatísticas.DGE. Available at: http://www.dge.mec.pt/relatoriosestatisticas-0 (Accessed: January 15, 2023).

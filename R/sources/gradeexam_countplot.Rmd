@@ -1,0 +1,89 @@
+
+
+```{r}
+
+library(ggplot2)
+library(RMySQL)
+library(tidyr)
+library(base)
+library(plm)
+```
+
+
+```{r}
+# Verbinden Sie sich mit der MySQL-Datenbank
+con <- dbConnect(MySQL(),
+                 host = "localhost",
+                 user = "root",
+                 password = "Hausboot69",
+                 dbname = "NOVAENES")
+
+dbconn <- dbConnect(MySQL(), host = "localhost", user = "root", password = "Hausboot69", dbname = "NOVAENES");
+feed = dbSendQuery(dbconn, "Select * from vwenes_full")
+vwENES <- dbFetch(feed, n = -1)
+dbClearResult(feed)
+nrow(vwENES)
+
+# Schließen Sie die Verbindung zur MySQL-Datenbank
+dbDisconnect(con)
+```
+```{r}
+ggplot(vwENES, aes(x = gradeexam_bin)) +
+  geom_bar(stat = "count") +
+  ggtitle("Count of observations per gradeexam bin") +
+  xlab("Gradeexam bin") +
+  ylab("Count of observations")
+
+ggplot(vwENES, aes(x = gradeexam_bin)) +
+  geom_bar(stat = "count", fill = "blue") +
+  theme_minimal()
+
+ggplot(vwENES, aes(x = gradeexam_bin)) +
+  geom_bar(stat = "count") +
+  theme(panel.grid.major = element_line(color = "gray", linetype = "dotted"))
+
+ggplot(vwENES, aes(x = gradeexam_bin, fill = gradeexam)) +
+  geom_bar(stat = "count") +
+  theme(legend.position = "top")
+
+ggplot(vwENES, aes(x = gradeexam_bin)) +
+  geom_bar(stat = "count") +
+  scale_x_discrete(limits = levels(vwENES$gradeexam_bin)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(vwENES, aes(x = gradeexam_bin, y = ..count..)) +
+  geom_line() +
+  ggtitle("Gradeexam count") +
+  xlab("Gradeexam") +
+  ylab("count")
+
+# Summarize data by counting the number of observations per bin
+binned_data <- vwENES %>% 
+  group_by(gradeexam_bin) %>% 
+  summarize(count = n())
+
+# Plot the summarized data as a line plot
+ggplot(binned_data, aes(x = gradeexam_bin, y = count)) +
+  geom_line()
+
+
+
+
+```
+
+```{r}
+# Create a new column 'gradeexam_bin' to store the binned values
+vwENES$gradeexam_bin <- cut(vwENES$gradeexam, breaks = seq(0, 20, by = 0.1))
+
+ggplot(vwENES, aes(x = gradeexam_bin)) +
+  geom_bar(stat = "count")
+
+
+
+```
+```{r}
+ggplot(vwENES, aes(x = gradeexam_bin)) +
+  geom_line(aes(y = ..count..), stat = "identity")
+
+```
+
