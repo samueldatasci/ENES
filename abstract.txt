@@ -17,24 +17,5 @@ Statistics Unlocking the Power of Data (Robin H. Lock, Patti Frazer Lock etc.)
 So instead of establishing an interval for the population's parameter and defining the confidence for that interval, we can get the atual population parameter and without the need for a confidence degree.
 
 
-
-
-
-
-rse is composed of the Secondary Education exams taken at first phase in Portugal by internal students.
+source is composed of the Secondary Education exams taken at first phase in Portugal by internal students.
 Instead of using sample statistics, we are able to calculate the actual population parameters.
-
-
-Published on May 14, 2020 by Pritha Bhandari. Revised on December 5, 2022.
-From https://www.scribbr.com/methodology/population-vs-sample/
-
-Example: Collecting data from a population
-A high school administrator wants to analyze the final exam scores of all graduating seniors to see if there is a trend. Since they are only interested in applying their findings to the graduating seniors in this high school, they use the whole population dataset.
-
-(...)
-
-You can use estimation or hypothesis testing to estimate how likely it is that a sample statistic differs from the population parameter.
-
-
-
-

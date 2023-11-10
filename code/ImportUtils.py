@@ -116,40 +116,43 @@ def write_parquet( df, filename):
 
 # region Parquet Imports
 
-def get_dfGeo_from_Parquet():
+def get_dfGeo_from_parquet():
 	'''Return dataframe with Distrito, Concelho and Nut3 information. Obtain data from parquet files.'''
 	return read_parquet('dfGeo')
 
-def get_dfSitFreq_from_Parquet():
+def get_dfSitFreq_from_parquet():
 	'''Return dataframe with Student enrollment (Situacao de Frequencia) information. Obtain data from parquet files.'''
 	return read_parquet('dfSitFreq')
 
-def get_dfSchools_from_Parquet():
+def get_dfSchools_from_parquet():
 	'''Return dataframe with School information. Obtain data from parquet files.'''
 	return read_parquet("dfSchools")
 
-def get_dfCursos_from_Parquet():
+def get_dfCursos_from_parquet():
 	'''Return dataframe with Course information. Obtain data from parquet files.'''
 	return read_parquet("dfCursos")
 
-def get_dfExames_from_Parquet():
+def get_dfExames_from_parquet():
 	'''Return dataframe with Exam information. Obtain data from parquet files.'''
 	return read_parquet("dfExames")
 
-def get_dfResultados_from_Parquet():
+def get_dfResultados_from_parquet():
 	'''Return dataframe with Exam Results information. Obtain data from parquet files.'''
 	return read_parquet("dfResultados")
 
-def get_dfAll_from_Parquet():
+def get_dfAll_from_parquet():
 	'''Return dataframe with all data joined, from parquet files.'''
 	return read_parquet('dfAll')
 
-def get_dfAllFase1_from_Parquet():
+def get_dfAllFase1_from_parquet():
 	'''Return dataframe with all data joined, from parquet files, just for Phase 1 exams.'''
 	return read_parquet("dfAllFase1")
 
-def get_dfInfoEscolas_from_Parquet():
+def get_dfInfoEscolas_from_parquet():
 	return read_parquet("dfInfoEscolas")
+
+def get_dfInfoEscolas_for_analysis_from_parquet():
+	return read_parquet("dfInfoEscolas_for_analysis")
 
 #endregion
 
@@ -214,8 +217,8 @@ def get_dfSchools_from_MDB():
 		
 		try:
 			# Establish a connection to the database
-			SQL1 = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, CodDGEEC FROM tblEscolas;"
-			SQL2 = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr, PubPriv, int( distrito * 100000 + concelho * 1000 + 999) as CodDGEEC FROM tblEscolas;"
+			SQL1 = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, CodDGEEC FROM tblEscolas;"
+			SQL2 = "SELECT " + str(ano) + " as AnoDadosEscola, Distrito, Concelho, Escola, Descr as DescrEscola, PubPriv, int( distrito * 100000 + concelho * 1000 + 999) as CodDGEEC FROM tblEscolas;"
 			dfUpdates = read_sql_with_fallback(year=ano, SQLcmds=[SQL1, SQL2])
 
 			# Identify rows in dfUpdates that don't exist in dfSchools, select them and then concatenate them to dfSchools
@@ -349,11 +352,24 @@ def get_dfAllFase1_from_datasets(dfAll):
 
     
 def get_dfInfoEscolas_from_datasets(dfAllFase1):
+	from main import dicFilters
 
 	myclock= vprint_time(prefix = "dfInfoEscolas - Applying ""InfoEscolas"" on dfAllFase1 filters and calculating group statistcs.")
-	# We're eliminating 83 results whose "curso" is not in the list of courses for that year. 2009: 14; 2010: 47; 2011: 22
-	dfInfoEscolas = dfAllFase1[ (dfAllFase1["TemInterno"] == "S") & (dfAllFase1["SubtipoCurso"].isin(["N01", "N04"])) & (dfAllFase1["Fase"] == "1") & (dfAllFase1["ParaAprov"] == "S") & (dfAllFase1["Interno"] == "S") & (dfAllFase1["Class_Exam"] > 9.4)]
-	
+
+	# Apply filters defined in YAML file
+
+	origsize = dfAllFase1.shape[0]
+	vprint("Original dataset size:", origsize)
+
+	dfInfoEscolas = dfAllFase1.copy()
+
+	for key in dicFilters.keys():
+
+		dfInfoEscolas = dfInfoEscolas[dfInfoEscolas[key].isin(dicFilters[key])]
+		vprint("Size reduced by ", origsize - dfInfoEscolas.shape[0], " by applying filter.", key, ".")
+		origsize = dfInfoEscolas.shape[0]
+
+
 	# Class_Exam_Rounded
 	dfStats = dfInfoEscolas.groupby(['ano', "Exame", 'Class_Exam_Rounded']).agg(['median', 'mean', 'count'])['CIF'].rename(columns={'median': 'ExamRounded_median_CIF', 'mean': 'ExamRounded_mean_CIF', 'count': 'ExamRounded_count_CIF'})
 	dfInfoEscolas = dfInfoEscolas.merge(dfStats, left_on=['ano', "Exame", 'Class_Exam_Rounded'], right_on=['ano', "Exame", 'Class_Exam_Rounded'], how='left')
@@ -374,10 +390,50 @@ def get_dfInfoEscolas_from_datasets(dfAllFase1):
 	dfInfoEscolas["CIF_bonus_adj_median_ExamRoundUp"] = dfInfoEscolas["CIF_bonus_median_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
 	dfInfoEscolas["CIF_bonus_adj_mean_ExamRoundUp"]   = dfInfoEscolas["CIF_bonus_mean_ExamRoundUp"] + dfInfoEscolas["Class_Exam"] - dfInfoEscolas["Class_Exam_RoundUp"]
 
+
+	# Get the number of exams - count and ranking starting with the most popular for all years
+	dfPosTopExames = pd.DataFrame(dfInfoEscolas["Exame"].value_counts().reset_index(name = "ExamOverallCount"))
+	dfPosTopExames.columns = ["Exame", "ExamOverallCount"]
+	dfPosTopExames["ExamOverallRank"] = dfPosTopExames["ExamOverallCount"].rank(ascending=False, method='dense').astype(int)
+	dfInfoEscolas = dfInfoEscolas.merge( dfPosTopExames, on="Exame", how="inner")
+
+	# Get the number of exams - count and ranking starting with the most popular for each year
+	dfPosTopExamesAno = dfInfoEscolas.groupby(["Exame", "ano"]).size().reset_index(name="ExamYearlyCount")
+	dfPosTopExamesAno["ExamYearlyRank"] = dfPosTopExamesAno.groupby("ano")["ExamYearlyCount"].rank(ascending=False, method='dense').astype(int)
+	dfInfoEscolas = dfInfoEscolas.merge( dfPosTopExamesAno, on=["Exame", "ano"], how="inner")
+
+
 	write_parquet( dfInfoEscolas, 'dfInfoEscolas')
 	myclock= vprint_time(prefix = "dfInfoEscolas - created and save to parquet! ", start_time=myclock)
 	return( dfInfoEscolas)
+
+
+
+def get_dfInfoEscolas_for_analysis_from_datasets(dfInfoEscolas):
+
+	from main import dicAnalysis
+
+	myclock= vprint_time(prefix = "dfInfoEscolas_for_analysis - Removing unneeded columns, adding new columns and saving to parquet.")
+
+	# Remove unneeded columns
+
+	cols2drop = dicAnalysis["columnsToDrop"]
+
+	dfInfoEscolas_for_analysis = dfInfoEscolas.copy()
+
+	dfInfoEscolas_for_analysis["isFemale"] = dfInfoEscolas_for_analysis["Sexo"] == "F"
+	cols2drop.append("Sexo")
+	dfInfoEscolas_for_analysis["isPublic"] = dfInfoEscolas_for_analysis["PubPriv"] == "PUB"
+	cols2drop.append("PubPriv")			  
+
+	dfInfoEscolas_for_analysis = dfInfoEscolas_for_analysis.drop(cols2drop, axis=1)
+
+	write_parquet( dfInfoEscolas_for_analysis, 'dfInfoEscolas_for_analysis')
+	myclock= vprint_time(prefix = "dfInfoEscolas_for_analysis - created and save to parquet! ", start_time=myclock)
+	return( dfInfoEscolas_for_analysis)
+
 # endregion
+
 
 
 # region print utilities

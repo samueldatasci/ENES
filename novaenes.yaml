@@ -50,22 +50,23 @@ dicParquetExtra:
   0: dfAll
   1: dfAllFase1
   2: dfInfoEscolas
+  3: dfInfoEscolas_for_analysis
 
 dicSaveDataframeAsCSV:
-  dfInfoEscolas : True
+  dfInfoEscolas : False
   dfAll : False
   dfAllFase1: False
 
 # Names for Nuts2
 dicNuts2:
-  11: Norte
-  15: Algarve
-  16: Centro
-  17: AM Lisboa
-  18: Alentejo
-  20: RA Açores
-  30: RA Madeira
-  90: Estrangeiro
+  "11": Norte
+  "15": Algarve
+  "16": Centro
+  "17": AM Lisboa
+  "18": Alentejo
+  "20": RA Açores
+  "30": RA Madeira
+  "90": Estrangeiro
 
 dicExamShortNames:
   Biologia e Geologia:Biologia/Geol.
@@ -76,6 +77,54 @@ dicExamShortNames:
   Literatura Portuguesa:Liter.Portuguesa
   Espanhol (iniciação):Espanhol (inic.)
 
+
+# Filter for analysis:
+# This dictionaries are used to filter attributes in the dfInfoEscolas dataframe
+
+dicFilters:
+  # Filtros do InfoEscolas
+  #dfInfoEscolas = dfAllFase1[ (dfAllFase1["TemInterno"] == "S") & (dfAllFase1["SubtipoCurso"].isin(["N01", "N04"])) & (dfAllFase1["Fase"] == "1") & (dfAllFase1["ParaAprov"] == "S") & (dfAllFase1["Interno"] == "S") & (dfAllFase1["Class_Exam"] > 9.4)]
+  TemInterno: ["S"]
+  SubtipoCurso: ["N01", "N04"]
+  Fase: ["1"]
+  ParaAprov: ["S"]
+  Interno: ["S"]
+  Class_Exam: [9.5,9.6,9.7,9.8,9.9,\
+              10.0,10.1,10.2,10.3,10.4,10.5,10.6,10.7,10.8,10.9,\
+              11.0,11.1,11.2,11.3,11.4,11.5,11.6,11.7,11.8,11.9,\
+              12.0,12.1,12.2,12.3,12.4,12.5,12.6,12.7,12.8,12.9,\
+              13.0,13.1,13.2,13.3,13.4,13.5,13.6,13.7,13.8,13.9,\
+              14.0,14.1,14.2,14.3,14.4,14.5,14.6,14.7,14.8,14.9,\
+              15.0,15.1,15.2,15.3,15.4,15.5,15.6,15.7,15.8,15.9,\
+              16.0,16.1,16.2,16.3,16.4,16.5,16.6,16.7,16.8,16.9,\
+              17.0,17.1,17.2,17.3,17.4,17.5,17.6,17.7,17.8,17.9,\
+              18.0,18.1,18.2,18.3,18.4,18.5,18.6,18.7,18.8,18.9,\
+              19.0,19.1,19.2,19.3,19.4,19.5,19.6,19.7,19.8,19.9,20.0]
+
+  # Filtros adicionais
+  Curso: ["060", "061", "062", "063", "064", "C60", "C61", "C62", "C63", "C64"]
+  ano: [2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022]
+  
+
+dicAnalysis:
+  xcolumnsToDrop: [ID, Fase, ParaAprov,Interno, ParaMelhoria, ParaIngresso, ParaCFCEPE,
+    TemInterno, Covid]
+    
+  columnsToDrop: [ID, Fase, ParaAprov,Interno, ParaMelhoria, ParaIngresso, ParaCFCEPE,
+    TemInterno, Covid, TipoCurso_Ano_Ini, TipoCurso_Ano_Term, TipoCurso_Ordena,
+    AnoDadosEscola, DescrEscola, CFD, CodDGEEC, DescrDistrito, DescrConcelho,
+    TipoExame, Nuts2, Nuts3, DescrExame, DescrExameAbrev,
+    SitFreqDescr, SitFreqDefin, SitFreq, TipoCurso, SubtipoCurso,
+    Class_Exam_RoundUp, DescrCurso, DescrTipoCurso, DescrSubtipoCurso,
+    ExamRoundUp_median_CIF, ExamRoundUp_mean_CIF, ExamRoundUp_count_CIF,
+    CIF_bonus_median_ExamRoundUp, CIF_bonus_mean_ExamRoundUp,
+    CIF_bonus_adj_median_ExamRoundUp, CIF_bonus_adj_mean_ExamRoundUp,
+    ExamYearlyCount]
+
+
+
+
+#Rank
 
 # Files that are not used - this is for reference; these are 9th grade exams
 # ENEB2008.zip: http://www.dge.mec.pt/sites/default/files/JNE/eneb2008-itens_1.zip

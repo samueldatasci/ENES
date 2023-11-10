@@ -24,10 +24,11 @@ import wget
 # Import custom library
 from ImportUtils import vprint, vprint_time
 from ImportUtils import get_dfGeo_from_MDB, get_dfSchools_from_MDB, get_dfCursos_from_MDB, get_dfExames_from_MDB, get_dfResultados_from_MDB
-from ImportUtils import get_dfGeo_from_Parquet, get_dfSchools_from_Parquet, get_dfCursos_from_Parquet, get_dfExames_from_Parquet, get_dfResultados_from_Parquet
-from ImportUtils import get_dfSitFreq_from_Parquet, get_dfSitFreq_from_MDB
-from ImportUtils import download_zip_files, extract_MDBs, get_dfAll_from_datasets, get_dfAll_from_Parquet
-from ImportUtils import get_dfAllFase1_from_Parquet, get_dfInfoEscolas_from_Parquet, get_dfAllFase1_from_datasets, get_dfInfoEscolas_from_datasets
+from ImportUtils import get_dfGeo_from_parquet, get_dfSchools_from_parquet, get_dfCursos_from_parquet, get_dfExames_from_parquet, get_dfResultados_from_parquet
+from ImportUtils import get_dfSitFreq_from_parquet, get_dfSitFreq_from_MDB
+from ImportUtils import download_zip_files, extract_MDBs, get_dfAll_from_datasets, get_dfAll_from_parquet
+from ImportUtils import get_dfAllFase1_from_parquet, get_dfInfoEscolas_from_parquet, get_dfAllFase1_from_datasets, get_dfInfoEscolas_from_datasets
+from ImportUtils import get_dfInfoEscolas_for_analysis_from_datasets, get_dfInfoEscolas_for_analysis_from_parquet
 
 import warnings
 #endregion imports
@@ -43,7 +44,7 @@ yaml_file = 'novaenes.yaml'
 
 # Read the data from the YAML file
 with open(yaml_file, 'r') as file:
-    dataParams = yaml.load(file, Loader=yaml.FullLoader)
+   dataParams = yaml.load(file, Loader=yaml.FullLoader)
 
 # Extract the individual dictionaries from the loaded data
 dicFiles = dataParams['dicFiles']
@@ -52,6 +53,11 @@ dicParquetExtra = dataParams['dicParquetExtra']
 dicParams = dataParams['dicParams']
 dicNuts2 = dataParams['dicNuts2']
 dicExamShortNames = dataParams['dicExamShortNames']
+dicSaveDataframeAsCSV = dataParams['dicSaveDataframeAsCSV']
+dicFilters = dataParams["dicFilters"]
+dicAnalysis = dataParams["dicAnalysis"]
+
+#print(dicAnalysis)
 
 
 if dicParams["ignore_known_warnings"] == True:
@@ -146,12 +152,12 @@ def it():
 
 		print("Loading all base dataframes from Parquet base files on disk")
 
-		dfGeo        = get_dfGeo_from_Parquet()
-		dfSchools    = get_dfSchools_from_Parquet()
-		dfCursos     = get_dfCursos_from_Parquet()
-		dfExames     = get_dfExames_from_Parquet()
-		dfResultados = get_dfResultados_from_Parquet()
-		dfSitFreq    = get_dfSitFreq_from_Parquet()
+		dfGeo        = get_dfGeo_from_parquet()
+		dfSchools    = get_dfSchools_from_parquet()
+		dfCursos     = get_dfCursos_from_parquet()
+		dfExames     = get_dfExames_from_parquet()
+		dfResultados = get_dfResultados_from_parquet()
+		dfSitFreq    = get_dfSitFreq_from_parquet()
 
 
 	#parquetPath = dicParams['dataFolderParquet']
@@ -180,14 +186,18 @@ def it():
 		dfInfoEscolas = get_dfInfoEscolas_from_datasets(dfAllFase1)
 		current_time = vprint_time(current_time, 'Created dfInfoEscolas from datasets. Shape: ' + str(dfInfoEscolas.shape) + '...')
 
+		dfInfoEscolas_for_analysis = get_dfInfoEscolas_for_analysis_from_datasets(dfInfoEscolas)
+		current_time = vprint_time(current_time, 'Created dfInfoEscolas_for_analysis from datasets. Shape: ' + str(dfInfoEscolas_for_analysis.shape) + '...')
+
 	else:
 		# Because parquet extra files already exist, just load them from disk
 
 		print("Loading Extra parquet files from disk")
 
-		dfAll         = get_dfAll_from_Parquet()
-		dfAllFase1    = get_dfAllFase1_from_Parquet()
-		dfInfoEscolas = get_dfInfoEscolas_from_Parquet()
+		dfAll         = get_dfAll_from_parquet()
+		dfAllFase1    = get_dfAllFase1_from_parquet()
+		dfInfoEscolas = get_dfInfoEscolas_from_parquet()
+		dfInfoEscolas_for_analysis = get_dfInfoEscolas_for_analysis_from_parquet()
 
 
 if __name__ == '__main__':
