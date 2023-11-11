@@ -52,6 +52,13 @@ dicParquetExtra:
   2: dfInfoEscolas
   3: dfInfoEscolas_for_analysis
 
+# NOT IMPLEMENTED!
+# The concept is that these files will be saved to a directory that syncs with GIT, so that
+# Users can directly access the files from there
+#dicParquetAdditionalSave:
+#  location: C:\Users\Samuel Santos\Documents\MDSAA-DS\NOVAENES\data
+#  files: dfAll, dfAllFase1, dfInfoEscolas, dfInfoEscolas_for_analysis
+
 dicSaveDataframeAsCSV:
   dfInfoEscolas : False
   dfAll : False
