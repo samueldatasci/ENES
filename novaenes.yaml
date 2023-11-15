@@ -5,7 +5,7 @@ dicParams:
   dataFolderZIP: C:/ENES/ZIP/
   ignore_known_warnings: true
   verbose: true
-  parquetCompression: gzip
+  parquetCompression: None
   # None or gzip
 
   firstYear: 2008

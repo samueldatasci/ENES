@@ -79,7 +79,9 @@ def it():
 		createParquetBase = True
 	else:
 		for key in dicParquetBase:
-			file = parquetPath + dicParquetBase[key] + ".parquet.gzip"
+			file = parquetPath + dicParquetBase[key] + ".parquet"
+			if not dicParams["parquetCompression"] == None:
+				file = file + "." + dicParams["parquetCompression"]
 			if not exists(file):
 				print("Parquet base file does not exist; creating it: " + file)
 				print("Creating all Parquet base files from MDB")
